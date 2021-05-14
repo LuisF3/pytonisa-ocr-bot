@@ -2,3 +2,5 @@
 venv/
 *.log
 *.session*
+deploy.sh
+logs/
