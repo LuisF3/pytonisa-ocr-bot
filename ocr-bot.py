@@ -23,6 +23,7 @@ def log_config():
     ocrmypdf_log.setLevel(logging.INFO)
     ocrmypdf_log.addHandler(log_to_file)
     pdfminer_log.setLevel(logging.ERROR)
+    pdfminer_log.addHandler(log_to_file)
 
     return log
 
