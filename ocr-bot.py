@@ -15,8 +15,8 @@ def log_config():
     ocrmypdf_log = logging.getLogger('ocrmypdf')
     pdfminer_log = logging.getLogger('pdfminer')
 
-    log_to_file = logging.FileHandler('logs/errors.log')
-    log_to_file.setLevel(logging.ERROR)
+    log_to_file = logging.FileHandler('logs/infos.log')
+    log_to_file.setLevel(logging.INFO)
 
     log.setLevel(logging.INFO)
     log.addHandler(log_to_file)
