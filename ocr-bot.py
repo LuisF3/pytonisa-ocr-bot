@@ -34,7 +34,7 @@ def log_config():
     log.addHandler(info_file)
     log.addHandler(warning_file)
     log.addHandler(errors_file)
-    ocrmypdf_log.setLevel(logging.INFO)
+    ocrmypdf_log.setLevel(logging.WARN)
     ocrmypdf_log.addHandler(warning_file)
     ocrmypdf_log.addHandler(errors_file)
     pdfminer_log.setLevel(logging.ERROR)
@@ -65,14 +65,14 @@ def get_flags(string: str, flag: str, splitter: str) -> list:
 def main():
     with TelegramClient('name', api_id, api_hash).start(bot_token=bot_token) as client:
         @client.on(events.NewMessage(incoming=True, pattern='/start'))
-        async def handler(event: events.newmessage.NewMessage.Event):
+        async def start_command(event: events.newmessage.NewMessage.Event):
             await event.respond('Olá! Meu nome é Pytonisia e posso transformar pdfs em pdfs acessíveis/pesquisáveis')
             await event.respond('Tenha em mente que pdfs grandes podem demorar para serem processados. Se já possuirem algum OCR, vai demorar um pouco mais, pois será necessário limpar o OCR anterior.')
             await event.respond('Para definir a(s) língua(s) do documento, utilize o comando -l lang1+lang2+lang3 no texto da mensagem do documento')
             await event.respond('No momento, são suportas as línguas português (por), inglês (eng) e espanhol (spa)')
             await event.respond('Exemplo de comando: `-l por+eng`')
             await event.respond('O código fonte pode ser encontrado em https://github.com/LuisF3')
-            await event.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: ')
+            await event.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
 
 
         @client.on(events.NewMessage(incoming=True, pattern='(^-)|(^$)', func=lambda e: e.message.file is not None))
@@ -105,7 +105,7 @@ def main():
 
                 langs = get_flags(event.message.message, '-l', '+')
                 if len(langs) > 0:
-                    log.info('Language set to: ', langs)
+                    log.info('Language set to: ' + ' '.join(langs))
                     default_args['language'] = langs
 
                 default_args['input_file'] = await event.download_media(file = default_args['input_file'])
@@ -114,7 +114,7 @@ def main():
                 log.info('Iniciando processamento OCR')
                 await event.respond('Iniciando processamento OCR!')
                 try:
-                    ocrmypdf.ocr(**default_args,)
+                    ocrmypdf.ocr(**default_args)
                 except ocrmypdf.PriorOcrFoundError:
                     log.info('Arquivo já possui OCR')
                     default_args['deskew'] = False
