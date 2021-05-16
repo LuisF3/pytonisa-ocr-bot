@@ -1,6 +1,7 @@
 import tempfile
 import logging
 import os
+import asyncio
 
 import ocrmypdf
 import nanoid
@@ -111,16 +112,18 @@ def main():
                 default_args['input_file'] = await event.download_media(file = default_args['input_file'])
 
 
+                loop = asyncio.get_event_loop()
                 log.info('Iniciando processamento OCR')
                 await event.respond('Iniciando processamento OCR!')
                 try:
-                    ocrmypdf.ocr(**default_args)
+                    await loop.run_in_executor(None, lambda : ocrmypdf.ocr(**default_args))
                 except ocrmypdf.PriorOcrFoundError:
                     log.info('Arquivo já possui OCR')
                     default_args['deskew'] = False
                     default_args['clean-final'] = False
                     default_args['remove-background'] = False
-                    ocrmypdf.ocr(**default_args, redo_ocr=True)
+                    default_args['redo_ocr'] = True
+                    await loop.run_in_executor(None, lambda : ocrmypdf.ocr(**default_args))
                 except ocrmypdf.MissingDependencyError as mde:
                     log.error('Não foi possível processar alguma das línguas solicitadas', mde)
                     await event.reply('Não foi possível processar alguma das línguas solicitadas')
