@@ -67,12 +67,24 @@ def main():
         @client.on(events.NewMessage(incoming=True, pattern='/start'))
         async def start_command(event: events.newmessage.NewMessage.Event):
             message_obj: custom.message.Message = event.message
-            
+
             await message_obj.respond('Olá! Meu nome é Pytonisa e posso transformar pdfs em pdfs acessíveis/pesquisáveis (em OCR)')
             await message_obj.respond('Tenha em mente que pdfs grandes (em tamanho ou qtd de páginas) podem demorar a serem processados e, se já possuírem algum OCR, vai demorar ainda mais, pois será necessário limpar o OCR anterior')
-            await message_obj.respond('Para definir a(s) língua(s) do documento, utilize o comando -l lang1+lang2+lang3 no texto da mensagem do documento')
-            await message_obj.respond('No momento, estão disponíveis as línguas português (por), inglês (eng) e espanhol (spa)')
-            await message_obj.respond('Exemplo de comando: `-l por+eng`')
+            await message_obj.respond('Para mais informações, veja as opções do bot (ou digite \'/\')')
+            await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
+
+        @client.on(events.NewMessage(incoming=True, pattern='/help_lang'))
+        async def help_lang_command(event: events.newmessage.NewMessage.Event):
+            message_obj: custom.message.Message = event.message
+            
+            await message_obj.respond('Para definir a(s) língua(s) do documento, utilize o comando `-l lang1+lang2+lang3` no texto da mensagem do documento')
+            await message_obj.respond('No momento, estão disponíveis as línguas português (por), inglês (eng) e espanhol (spa), mas, pode me contatar se precisar de outro idioma (https://t.me/Luis_pi)')
+            await message_obj.respond('Exemplo de comando: `-l por+eng` - Reconhece um documento com texto misto de inglês e português')
+
+        @client.on(events.NewMessage(incoming=True, pattern='/more_info'))
+        async def more_info_command(event: events.newmessage.NewMessage.Event):
+            message_obj: custom.message.Message = event.message
+            
             await message_obj.respond('O código fonte pode ser encontrado em https://github.com/LuisF3')
             await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
 
