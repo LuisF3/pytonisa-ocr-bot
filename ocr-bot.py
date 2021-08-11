@@ -1,15 +1,22 @@
 import os
 import asyncio
 
+from telethon.network.connection.connection import Connection
+
 from logs import log
 from handlers import start_command, help_lang_command, more_info_command, pdf_to_ocr 
 
 from telethon import TelegramClient
 from telethon.events import NewMessage
 
+from aio_pika import Connection, Channel, connect_robust
+
 api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+
+telethon = None
+rabbitmq = None
 
 async def start_telethon():
     client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
@@ -22,15 +29,25 @@ async def start_telethon():
     telethon = client
     return telethon
 
-def exit_telethon(telethon):
-    client = telethon
-    client.disconnect()
+async def exit_telethon(telethon):
+    client: TelegramClient = telethon
+    await client.disconnect()
 
 async def start_rabbitmq():
-    return 5
+    connection = await connect_robust("amqp://guest:guest@localhost/", loop=loop)
+    channel: Channel = await connection.channel()
+    queue = await channel.declare_queue('hello', auto_delete=True)
 
-def exit_rabbitmq(rabbitmq):
-    print(rabbitmq)
+    rabbitmq = {
+        'connection': connection,
+        'queues': { 'hello': queue }
+    }
+
+    return rabbitmq
+
+async def exit_rabbitmq(rabbitmq):
+    connection: Connection = rabbitmq['connection']
+    await connection.close()
 
 
 def main(loop: asyncio.AbstractEventLoop):
@@ -42,8 +59,8 @@ def main(loop: asyncio.AbstractEventLoop):
     try:
         loop.run_forever()
     except KeyboardInterrupt:
-        exit_telethon(telethon)
-        exit_rabbitmq(rabbitmq)
+        loop.run_until_complete(exit_telethon(telethon))
+        loop.run_until_complete(exit_rabbitmq(rabbitmq))
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
