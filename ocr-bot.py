@@ -67,11 +67,11 @@ def main():
         @client.on(events.NewMessage(incoming=True, pattern='/start'))
         async def start_command(event: events.newmessage.NewMessage.Event):
             message_obj: custom.message.Message = event.message
-
-            await message_obj.respond('Olá! Meu nome é Pytonisia e posso transformar pdfs em pdfs acessíveis/pesquisáveis')
-            await message_obj.respond('Tenha em mente que pdfs grandes podem demorar para serem processados. Se já possuirem algum OCR, vai demorar um pouco mais, pois será necessário limpar o OCR anterior.')
+            
+            await message_obj.respond('Olá! Meu nome é Pytonisa e posso transformar pdfs em pdfs acessíveis/pesquisáveis (em OCR)')
+            await message_obj.respond('Tenha em mente que pdfs grandes (em tamanho ou qtd de páginas) podem demorar a serem processados e, se já possuírem algum OCR, vai demorar ainda mais, pois será necessário limpar o OCR anterior')
             await message_obj.respond('Para definir a(s) língua(s) do documento, utilize o comando -l lang1+lang2+lang3 no texto da mensagem do documento')
-            await message_obj.respond('No momento, são suportas as línguas português (por), inglês (eng) e espanhol (spa)')
+            await message_obj.respond('No momento, estão disponíveis as línguas português (por), inglês (eng) e espanhol (spa)')
             await message_obj.respond('Exemplo de comando: `-l por+eng`')
             await message_obj.respond('O código fonte pode ser encontrado em https://github.com/LuisF3')
             await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
