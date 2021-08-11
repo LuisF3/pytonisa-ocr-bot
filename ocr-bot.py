@@ -110,7 +110,7 @@ def main():
             with tempfile.TemporaryDirectory() as path:
                 default_args = {
                     'input_file': None,
-                    'output_file': message_obj.file.name,
+                    'output_file': os.path.join(path, message_obj.file.name),
                     'language': ['por'],
                     'deskew': True,
                     'rotate_pages': True,
@@ -124,7 +124,7 @@ def main():
                     log.info('Language set to: ' + ' '.join(langs))
                     default_args['language'] = langs
 
-                default_args['input_file'] = await message_obj.download_media()
+                default_args['input_file'] = await message_obj.download_media(file=path)
 
                 loop = asyncio.get_event_loop()
                 log.info('Iniciando processamento OCR')
@@ -145,7 +145,6 @@ def main():
                 except Exception as e:
                     log.error('Ocorreu um erro desconhecido', e)
                     raise e
-
 
                 await message_obj.respond('OCR feito! Estamos fazendo upload do seu arquivo')
                 with open(default_args['output_file'], 'rb') as file:
