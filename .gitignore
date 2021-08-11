@@ -4,3 +4,4 @@ venv/
 *.session*
 deploy.sh
 logs/
+__pycache__/
