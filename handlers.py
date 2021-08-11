@@ -6,6 +6,8 @@ from aio_pika import Channel, Message
 
 from logs import log
 
+rabbitmq = None
+
 async def start_command(event: events.newmessage.NewMessage.Event):
     message_obj: custom.message.Message = event.message
 
@@ -27,8 +29,7 @@ async def more_info_command(event: events.newmessage.NewMessage.Event):
     await message_obj.respond('O código fonte pode ser encontrado em https://github.com/LuisF3')
     await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
 
-async def pdf_to_ocr(rabbitmq, event: events.newmessage.NewMessage.Event):
-    print(rabbitmq)
+async def pdf_to_ocr(event: events.newmessage.NewMessage.Event):
     """Handles messages for applying ocr to a pdf
     
     This function handles incoming new messages that respects the 

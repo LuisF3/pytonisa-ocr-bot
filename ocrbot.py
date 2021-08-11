@@ -1,11 +1,11 @@
 import os
 import asyncio
-from functools import partial
 
 from telethon.network.connection.connection import Connection
 
 from logs import log
-from handlers import start_command, help_lang_command, more_info_command, pdf_to_ocr 
+from handlers import start_command, help_lang_command, more_info_command, pdf_to_ocr
+import handlers
 
 from telethon import TelegramClient
 from telethon.events import NewMessage
@@ -16,16 +16,13 @@ api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 
-telethon = None
-rabbitmq = None
-
-async def start_telethon(rabbitmq):
+async def start_telethon():
     client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
 
     client.add_event_handler(start_command, NewMessage(incoming=True, pattern='/start'))
     client.add_event_handler(help_lang_command, NewMessage(incoming=True, pattern='/help_lang'))
     client.add_event_handler(more_info_command, NewMessage(incoming=True, pattern='/more_info'))
-    client.add_event_handler(partial(pdf_to_ocr, rabbitmq), NewMessage(incoming=True, pattern='(^-)|(^$)', func=lambda e: e.file is not None and e.file.ext == '.pdf'))
+    client.add_event_handler(pdf_to_ocr, NewMessage(incoming=True, pattern='(^-)|(^$)', func=lambda e: e.file is not None and e.file.ext == '.pdf'))
 
     telethon = client
     return telethon
@@ -53,17 +50,26 @@ async def exit_rabbitmq(rabbitmq):
 
 
 def main(loop: asyncio.AbstractEventLoop):
-    rabbitmq = loop.run_until_complete(start_rabbitmq())
-    telethon = loop.run_until_complete(start_telethon(rabbitmq))
-    print(rabbitmq)
+    telethon, rabbitmq = loop.run_until_complete(
+        asyncio.gather(
+            start_telethon(),
+            start_rabbitmq(),
+        )
+    )
+
+    handlers.rabbitmq = rabbitmq
 
     log.info('Bot initiated')
 
     try:
         loop.run_forever()
     except KeyboardInterrupt:
-        loop.run_until_complete(exit_telethon(telethon))
-        loop.run_until_complete(exit_rabbitmq(rabbitmq))
+        loop.run_until_complete(
+            asyncio.gather(
+                exit_telethon(telethon),
+                exit_rabbitmq(rabbitmq),
+            )
+        )
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
