@@ -1,14 +1,17 @@
 from queuemessage import QueueMessage
-import tempfile
 import os
 
 from telethon import events, custom
 from aio_pika import Channel, Message
+from motor.core import Collection
+from pymongo.results import InsertOneResult
+from bson.objectid import ObjectId
 
 from logs import log
 from queues import Queues
 
 rabbitmq = None
+mongodb_db = None
 
 async def start_command(event: events.newmessage.NewMessage.Event):
     message_obj: custom.message.Message = event.message
@@ -67,17 +70,19 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event):
         default_args['language'] = langs
 
     default_args['input_file'] = await message_obj.download_media(file=files_folder + message_obj.file.name)
-
-    log.info('Inserindo o arquivo na fila')
-    await message_obj.respond('Inserindo o arquivo na fila')
-
+    
+    collection: Collection = mongodb_db.ocr_request
     channel: Channel = rabbitmq['channel']
 
     queue_message = QueueMessage(message_obj.chat_id, message_obj.id, default_args)
-    encoded_queue_message = bytes(str(queue_message.__dict__), 'latin1')
+    result: InsertOneResult = await collection.insert_one(queue_message.__dict__)
+    objectId: ObjectId = result.inserted_id
 
-    await channel.default_exchange.publish(Message(encoded_queue_message), routing_key=Queues.TO_PROCESS.value)
-        
+    encoded_id = bytes(str(objectId), 'utf-8')
+    await channel.default_exchange.publish(Message(encoded_id), routing_key=Queues.TO_PROCESS.value)
+    
+    log.info('Arquivo inserido na fila para processamento')
+    await message_obj.respond('Arquivo inserido na fila para processamento')
     log.info('Finalizado')
 
 def get_flags(string: str, flag: str, splitter: str) -> list:

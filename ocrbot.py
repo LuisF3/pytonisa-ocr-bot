@@ -13,6 +13,8 @@ from telethon.events import NewMessage
 
 from aio_pika import Connection, Channel, connect_robust
 
+from motor.motor_asyncio import AsyncIOMotorClient
+
 api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -50,16 +52,27 @@ async def exit_rabbitmq(rabbitmq):
     connection: Connection = rabbitmq['connection']
     await connection.close()
 
+async def start_mongodb():
+    client = AsyncIOMotorClient('mongodb://localhost:27017')
+    
+    mongodb = client
+    return mongodb
+
+async def exit_mongodb(mongodb):
+    pass
+
 
 def main(loop: asyncio.AbstractEventLoop):
-    telethon, rabbitmq = loop.run_until_complete(
+    telethon, rabbitmq, mongodb = loop.run_until_complete(
         asyncio.gather(
             start_telethon(),
             start_rabbitmq(),
+            start_mongodb(),
         )
     )
 
     handlers.rabbitmq = rabbitmq
+    handlers.mongodb_db = mongodb.pytonisa
 
     log.info('Bot initiated')
 
@@ -70,6 +83,7 @@ def main(loop: asyncio.AbstractEventLoop):
             asyncio.gather(
                 exit_telethon(telethon),
                 exit_rabbitmq(rabbitmq),
+                exit_mongodb(mongodb),
             )
         )
 
