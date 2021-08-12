@@ -6,6 +6,7 @@ from telethon.network.connection.connection import Connection
 from logs import log
 from handlers import start_command, help_lang_command, more_info_command, pdf_to_ocr
 import handlers
+from queues import Queues
 
 from telethon import TelegramClient
 from telethon.events import NewMessage
@@ -34,12 +35,13 @@ async def exit_telethon(telethon):
 async def start_rabbitmq():
     connection = await connect_robust("amqp://guest:guest@localhost/", loop=loop)
     channel: Channel = await connection.channel()
-    await channel.declare_queue('hello', auto_delete=True)
+
+    for queue in Queues:
+        await channel.declare_queue(queue.value, durable=True)
 
     rabbitmq = {
         'connection': connection,
         'channel': channel,
-        'queues': [ 'hello' ],
     }
 
     return rabbitmq

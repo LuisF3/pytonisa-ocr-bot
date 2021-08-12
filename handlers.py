@@ -1,3 +1,4 @@
+from queuemessage import QueueMessage
 import tempfile
 import os
 
@@ -5,6 +6,7 @@ from telethon import events, custom
 from aio_pika import Channel, Message
 
 from logs import log
+from queues import Queues
 
 rabbitmq = None
 
@@ -46,31 +48,35 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event):
     log.info('pdf_to_ocr called')
     await message_obj.reply('Arquivo recebido!')
 
-    with tempfile.TemporaryDirectory() as path:
-        default_args = {
-            'input_file': None,
-            'output_file': os.path.join(path, message_obj.file.name),
-            'language': ['por'],
-            'deskew': True,
-            'rotate_pages': True,
-            'clean': False,
-            'optimize': 1,
-            'progress_bar': False
-        }
+    files_folder = 'pdfs' + os.sep
 
-        langs = get_flags(message_obj.message, '-l', '+')
-        if len(langs) > 0:
-            log.info('Language set to: ' + ' '.join(langs))
-            default_args['language'] = langs
+    default_args = {
+        'input_file': None,
+        'output_file': files_folder + message_obj.file.name,
+        'language': ['por'],
+        'deskew': True,
+        'rotate_pages': True,
+        'clean': False,
+        'optimize': 1,
+        'progress_bar': False,
+    }
 
-        default_args['input_file'] = await message_obj.download_media(file=path)
+    langs = get_flags(message_obj.message, '-l', '+')
+    if len(langs) > 0:
+        log.info('Language set to: ' + ' '.join(langs))
+        default_args['language'] = langs
 
-        log.info('Inserindo o arquivo na fila')
-        await message_obj.respond('Inserindo o arquivo na fila')
+    default_args['input_file'] = await message_obj.download_media(file=files_folder + message_obj.file.name)
 
-        channel: Channel = rabbitmq['channel']
+    log.info('Inserindo o arquivo na fila')
+    await message_obj.respond('Inserindo o arquivo na fila')
 
-        await channel.default_exchange.publish(Message(bytes(default_args['input_file'], 'latin1')), routing_key='hello')
+    channel: Channel = rabbitmq['channel']
+
+    queue_message = QueueMessage(message_obj.chat_id, message_obj.id, default_args)
+    encoded_queue_message = bytes(str(queue_message.__dict__), 'latin1')
+
+    await channel.default_exchange.publish(Message(encoded_queue_message), routing_key=Queues.TO_PROCESS.value)
         
     log.info('Finalizado')
 

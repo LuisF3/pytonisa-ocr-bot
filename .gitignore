@@ -5,3 +5,4 @@ venv/
 deploy.sh
 logs/
 __pycache__/
+pdfs/
