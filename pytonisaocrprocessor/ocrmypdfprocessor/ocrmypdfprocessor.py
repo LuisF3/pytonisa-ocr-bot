@@ -4,40 +4,16 @@ import asyncio
 from telethon.network.connection.connection import Connection
 
 from pytonisacommons import log
-from MessageHandlers import start_command, help_lang_command, more_info_command, pdf_to_ocr
-import MessageHandlers
 from pytonisacommons import Queues
-from QueueHandlers import on_document_processed
-import QueueHandlers
-
-from telethon import TelegramClient
-from telethon.events import NewMessage
+from queuehandler import on_document_to_process
+import queuehandler
 
 from aio_pika import Connection, Channel, Queue, connect_robust
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
-api_id = int(os.getenv('TELEGRAM_API_ID'))
-api_hash = os.getenv('TELEGRAM_API_HASH')
-bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-
 rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
 mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
-
-async def start_telethon() -> TelegramClient:
-    client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
-
-    client.add_event_handler(start_command, NewMessage(incoming=True, pattern='/start'))
-    client.add_event_handler(help_lang_command, NewMessage(incoming=True, pattern='/help_lang'))
-    client.add_event_handler(more_info_command, NewMessage(incoming=True, pattern='/more_info'))
-    client.add_event_handler(pdf_to_ocr, NewMessage(incoming=True, pattern='(^-)|(^$)', func=lambda e: e.file is not None and e.file.ext == '.pdf'))
-
-    telethon = client
-    return telethon
-
-async def exit_telethon(telethon: TelegramClient):
-    client: TelegramClient = telethon
-    await client.disconnect()
 
 async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     connection = await connect_robust(rabbitmq_connection_string, loop=loop)
@@ -54,7 +30,7 @@ async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     }
 
     loop.create_task(
-        queues[Queues.PROCESSED.value].consume(on_document_processed, no_ack=True)
+        queues[Queues.TO_PROCESS.value].consume(on_document_to_process, no_ack=True)
     )
 
     return rabbitmq
@@ -74,28 +50,23 @@ async def exit_mongodb(mongodb: AsyncIOMotorClient):
 
 
 def main(loop: asyncio.AbstractEventLoop) -> None:
-    telethon, rabbitmq, mongodb = loop.run_until_complete(
+    rabbitmq, mongodb = loop.run_until_complete(
         asyncio.gather(
-            start_telethon(),
             start_rabbitmq(loop),
             start_mongodb(),
         )
     )
+    
+    queuehandler.rabbitmq = rabbitmq
+    queuehandler.mongodb_db = mongodb.pytonisa
 
-    QueueHandlers.telegram = telethon
-    QueueHandlers.rabbitmq = rabbitmq
-    QueueHandlers.mongodb_db = mongodb.pytonisa
-    MessageHandlers.rabbitmq = rabbitmq
-    MessageHandlers.mongodb_db = mongodb.pytonisa
-
-    log.info('Bot initiated')
+    log.info('ocrmypdf processor initiated')
 
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         loop.run_until_complete(
             asyncio.gather(
-                exit_telethon(telethon),
                 exit_rabbitmq(rabbitmq),
                 exit_mongodb(mongodb),
             )
@@ -106,5 +77,4 @@ if __name__ == '__main__':
     try:
         main(loop)
     except:
-        print('entrou')
         log.exception('Uncaugh exception...')

@@ -1,5 +1,6 @@
 from pytonisacommons import QueueMessage
 import os
+from typing import Union
 
 from telethon import events, custom
 from aio_pika import Channel, Message
@@ -10,8 +11,8 @@ from bson.objectid import ObjectId
 from pytonisacommons import log
 from pytonisacommons import Queues
 
-rabbitmq: dict = None
-mongodb_db: Database = None
+rabbitmq: Union[dict, None] = None
+mongodb_db: Union[Database, None] = None
 
 async def start_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
@@ -51,7 +52,7 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     log.info('pdf_to_ocr called')
     await message_obj.reply('Arquivo recebido!')
 
-    files_folder = 'pdfs' + os.sep
+    files_folder = os.sep + os.path.join('home', 'luis', 'pdfs') + os.sep
 
     default_args = {
         'input_file': None,
