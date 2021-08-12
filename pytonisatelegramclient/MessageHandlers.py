@@ -1,15 +1,12 @@
-from pytonisacommons import QueueMessage
 import os
 from typing import Union
 
-from telethon import events, custom
 from aio_pika import Channel, Message
-from motor.core import Database, Collection
-from pymongo.results import InsertOneResult
 from bson.objectid import ObjectId
-
-from pytonisacommons import log
-from pytonisacommons import Queues
+from motor.core import Collection, Database
+from pymongo.results import InsertOneResult
+from pytonisacommons import QueueMessage, Queues, log
+from telethon import custom, events
 
 rabbitmq: Union[dict, None] = None
 mongodb_db: Union[Database, None] = None

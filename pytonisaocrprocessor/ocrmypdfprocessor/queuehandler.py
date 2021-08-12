@@ -1,12 +1,10 @@
-from aio_pika import IncomingMessage
-from pytonisacommons import log
-from pytonisacommons import Queues
 from typing import Union
-from motor.core import Database, Collection
-from bson.objectid import ObjectId
-from pytonisacommons import QueueMessage
+
 import ocrmypdf
-from aio_pika import Channel, Message
+from aio_pika import Channel, IncomingMessage, Message
+from bson.objectid import ObjectId
+from motor.core import Collection, Database
+from pytonisacommons import QueueMessage, Queues, log
 
 rabbitmq: Union[dict, None] = None
 mongodb_db: Union[Database, None] = None

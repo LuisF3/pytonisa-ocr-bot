@@ -1,10 +1,10 @@
-from aio_pika import IncomingMessage
-from telethon import TelegramClient
 from typing import Union
-from motor.core import Database, Collection
+
+from aio_pika import IncomingMessage
 from bson.objectid import ObjectId
-from pytonisacommons import log
-from pytonisacommons import QueueMessage
+from motor.core import Collection, Database
+from pytonisacommons import QueueMessage, log
+from telethon import TelegramClient
 
 telegram: Union[TelegramClient, None] = None
 rabbitmq: Union[dict, None] = None

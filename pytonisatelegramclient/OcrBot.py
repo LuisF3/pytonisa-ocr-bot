@@ -1,21 +1,18 @@
-import os
 import asyncio
+import os
 
-from telethon.network.connection.connection import Connection
-
-from pytonisacommons import log
-from MessageHandlers import start_command, help_lang_command, more_info_command, pdf_to_ocr
-import MessageHandlers
-from pytonisacommons import Queues
-from QueueHandlers import on_document_processed
-import QueueHandlers
-
+from aio_pika import Channel, Connection, Queue, connect_robust
+from motor.motor_asyncio import AsyncIOMotorClient
+from pytonisacommons import Queues, log
 from telethon import TelegramClient
 from telethon.events import NewMessage
+from telethon.network.connection.connection import Connection
 
-from aio_pika import Connection, Channel, Queue, connect_robust
-
-from motor.motor_asyncio import AsyncIOMotorClient
+import MessageHandlers
+import QueueHandlers
+from MessageHandlers import (help_lang_command, more_info_command, pdf_to_ocr,
+                             start_command)
+from QueueHandlers import on_document_processed
 
 api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')

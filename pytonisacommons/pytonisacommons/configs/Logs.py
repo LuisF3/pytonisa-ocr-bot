@@ -1,5 +1,6 @@
-from logging import Logger, Formatter, basicConfig, getLogger, FileHandler, INFO, WARN, ERROR
 import os
+from logging import (ERROR, INFO, WARN, FileHandler, Formatter, Logger,
+                     basicConfig, getLogger)
 
 
 def log_config() -> Logger:

@@ -1,16 +1,13 @@
-import os
 import asyncio
+import os
 
+from aio_pika import Channel, Connection, Queue, connect_robust
+from motor.motor_asyncio import AsyncIOMotorClient
+from pytonisacommons import Queues, log
 from telethon.network.connection.connection import Connection
 
-from pytonisacommons import log
-from pytonisacommons import Queues
-from queuehandler import on_document_to_process
 import queuehandler
-
-from aio_pika import Connection, Channel, Queue, connect_robust
-
-from motor.motor_asyncio import AsyncIOMotorClient
+from queuehandler import on_document_to_process
 
 rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
 mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
