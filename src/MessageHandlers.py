@@ -7,7 +7,7 @@ from motor.core import Database, Collection
 from pymongo.results import InsertOneResult
 from bson.objectid import ObjectId
 
-from logs import log
+from configs.Logs import log
 from objects.Queues import Queues
 
 rabbitmq: dict = None
