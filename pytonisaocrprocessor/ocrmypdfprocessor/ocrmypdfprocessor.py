@@ -4,7 +4,6 @@ import os
 from aio_pika import Channel, Connection, Queue, connect_robust
 from motor.motor_asyncio import AsyncIOMotorClient
 from pytonisacommons import Queues, log
-from telethon.network.connection.connection import Connection
 
 import queuehandler
 from queuehandler import on_document_to_process

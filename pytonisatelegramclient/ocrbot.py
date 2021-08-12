@@ -6,7 +6,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pytonisacommons import Queues, log
 from telethon import TelegramClient
 from telethon.events import NewMessage
-from telethon.network.connection.connection import Connection
 
 import messagehandlers
 import queuehandlers
