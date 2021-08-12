@@ -1,4 +1,4 @@
-from queuemessage import QueueMessage
+from objects.QueueMessage import QueueMessage
 import os
 
 from telethon import events, custom
@@ -8,7 +8,7 @@ from pymongo.results import InsertOneResult
 from bson.objectid import ObjectId
 
 from logs import log
-from queues import Queues
+from objects.Queues import Queues
 
 rabbitmq: dict = None
 mongodb_db: Database = None

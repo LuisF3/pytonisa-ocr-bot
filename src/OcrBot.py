@@ -3,10 +3,10 @@ import asyncio
 
 from telethon.network.connection.connection import Connection
 
-from logs import log
-from handlers import start_command, help_lang_command, more_info_command, pdf_to_ocr
-import handlers
-from queues import Queues
+from configs.Logs import log
+from MessageHandlers import start_command, help_lang_command, more_info_command, pdf_to_ocr
+import MessageHandlers
+from objects.Queues import Queues
 
 from telethon import TelegramClient
 from telethon.events import NewMessage
@@ -18,6 +18,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+
+telegram = None
+rabbitmq = None
 
 async def start_telethon() -> TelegramClient:
     client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
@@ -71,8 +74,10 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
         )
     )
 
-    handlers.rabbitmq = rabbitmq
-    handlers.mongodb_db = mongodb.pytonisa
+    globals()['telegram'] = telethon
+    globals()['rabbitmq'] = rabbitmq
+    MessageHandlers.rabbitmq = rabbitmq
+    MessageHandlers.mongodb_db = mongodb.pytonisa
 
     log.info('Bot initiated')
 
