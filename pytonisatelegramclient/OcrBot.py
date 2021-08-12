@@ -24,20 +24,27 @@ bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
 mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
 
+
 async def start_telethon() -> TelegramClient:
     client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
 
-    client.add_event_handler(start_command, NewMessage(incoming=True, pattern='/start'))
-    client.add_event_handler(help_lang_command, NewMessage(incoming=True, pattern='/help_lang'))
-    client.add_event_handler(more_info_command, NewMessage(incoming=True, pattern='/more_info'))
-    client.add_event_handler(pdf_to_ocr, NewMessage(incoming=True, pattern='(^-)|(^$)', func=lambda e: e.file is not None and e.file.ext == '.pdf'))
+    client.add_event_handler(start_command, NewMessage(
+        incoming=True, pattern='/start'))
+    client.add_event_handler(help_lang_command, NewMessage(
+        incoming=True, pattern='/help_lang'))
+    client.add_event_handler(more_info_command, NewMessage(
+        incoming=True, pattern='/more_info'))
+    client.add_event_handler(pdf_to_ocr, NewMessage(
+        incoming=True, pattern='(^-)|(^$)', func=lambda e: e.file is not None and e.file.ext == '.pdf'))
 
     telethon = client
     return telethon
 
+
 async def exit_telethon(telethon: TelegramClient):
     client: TelegramClient = telethon
     await client.disconnect()
+
 
 async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     connection = await connect_robust(rabbitmq_connection_string, loop=loop)
@@ -54,20 +61,24 @@ async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     }
 
     loop.create_task(
-        queues[Queues.PROCESSED.value].consume(on_document_processed, no_ack=True)
+        queues[Queues.PROCESSED.value].consume(
+            on_document_processed, no_ack=True)
     )
 
     return rabbitmq
+
 
 async def exit_rabbitmq(rabbitmq: dict):
     connection: Connection = rabbitmq['connection']
     await connection.close()
 
+
 async def start_mongodb() -> AsyncIOMotorClient:
     client = AsyncIOMotorClient(mongodb_connection_string)
-    
+
     mongodb = client
     return mongodb
+
 
 async def exit_mongodb(mongodb: AsyncIOMotorClient):
     pass
@@ -100,6 +111,7 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
                 exit_mongodb(mongodb),
             )
         )
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

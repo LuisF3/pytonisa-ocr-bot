@@ -14,6 +14,7 @@ from pytonisacommons import Queues
 rabbitmq: Union[dict, None] = None
 mongodb_db: Union[Database, None] = None
 
+
 async def start_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
 
@@ -22,22 +23,25 @@ async def start_command(event: events.newmessage.NewMessage.Event) -> None:
     await message_obj.respond('Para mais informações, veja as opções do bot (ou digite \'/\')')
     await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
 
+
 async def help_lang_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
-    
+
     await message_obj.respond('Para definir a(s) língua(s) do documento, utilize o comando `-l lang1+lang2+lang3` no texto da mensagem do documento')
     await message_obj.respond('No momento, estão disponíveis as línguas português (por), inglês (eng) e espanhol (spa), mas, pode me contatar se precisar de outro idioma (https://t.me/Luis_pi)')
     await message_obj.respond('Exemplo de comando: `-l por+eng` - Reconhece um documento com texto misto de inglês e português')
 
+
 async def more_info_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
-    
+
     await message_obj.respond('O código fonte pode ser encontrado em https://github.com/LuisF3')
     await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
 
+
 async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     """Handles messages for applying ocr to a pdf
-    
+
     This function handles incoming new messages that respects the 
     pattern '(^-)|(^$)' (messages that are empty or starts with -)
     and have an attached pdf file.
@@ -71,29 +75,31 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
         default_args['language'] = langs
 
     default_args['input_file'] = await message_obj.download_media(file=files_folder + message_obj.file.name)
-    
+
     collection: Collection = mongodb_db.ocr_request
     channel: Channel = rabbitmq['channel']
 
-    queue_message = QueueMessage(message_obj.chat_id, message_obj.id, default_args)
+    queue_message = QueueMessage(
+        message_obj.chat_id, message_obj.id, default_args)
     result: InsertOneResult = await collection.insert_one(queue_message.__dict__)
     objectId: ObjectId = result.inserted_id
 
     encoded_id = bytes(str(objectId), 'utf-8')
     await channel.default_exchange.publish(Message(encoded_id), routing_key=Queues.TO_PROCESS.value)
-    
+
     log.info('Arquivo inserido na fila para processamento')
     await message_obj.respond('Arquivo inserido na fila para processamento')
     log.info('Finalizado')
 
+
 def get_flags(string: str, flag: str, splitter: str) -> list:
     if flag in string:
         index = string.index(flag)
-        lang_args = string[index + 3 : ]
-        
+        lang_args = string[index + 3:]
+
         try:
             index = lang_args.index('-')
-            lang_args = lang_args[ : index - 1]
+            lang_args = lang_args[: index - 1]
         except:
             pass
 

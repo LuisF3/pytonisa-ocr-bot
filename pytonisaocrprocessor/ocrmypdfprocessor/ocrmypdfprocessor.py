@@ -15,6 +15,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
 mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
 
+
 async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     connection = await connect_robust(rabbitmq_connection_string, loop=loop)
     channel: Channel = await connection.channel()
@@ -30,20 +31,24 @@ async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     }
 
     loop.create_task(
-        queues[Queues.TO_PROCESS.value].consume(on_document_to_process, no_ack=True)
+        queues[Queues.TO_PROCESS.value].consume(
+            on_document_to_process, no_ack=True)
     )
 
     return rabbitmq
+
 
 async def exit_rabbitmq(rabbitmq: dict):
     connection: Connection = rabbitmq['connection']
     await connection.close()
 
+
 async def start_mongodb() -> AsyncIOMotorClient:
     client = AsyncIOMotorClient(mongodb_connection_string)
-    
+
     mongodb = client
     return mongodb
+
 
 async def exit_mongodb(mongodb: AsyncIOMotorClient):
     pass
@@ -56,7 +61,7 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
             start_mongodb(),
         )
     )
-    
+
     queuehandler.rabbitmq = rabbitmq
     queuehandler.mongodb_db = mongodb.pytonisa
 
@@ -71,6 +76,7 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
                 exit_mongodb(mongodb),
             )
         )
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

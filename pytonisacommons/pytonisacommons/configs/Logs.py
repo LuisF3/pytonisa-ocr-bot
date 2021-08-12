@@ -1,6 +1,7 @@
 from logging import Logger, Formatter, basicConfig, getLogger, FileHandler, INFO, WARN, ERROR
 import os
 
+
 def log_config() -> Logger:
     formatter_str = '%(asctime)s [%(levelname)s] %(name)s (%(lineno)s): %(message)s'
     formatter = Formatter(formatter_str)
@@ -35,5 +36,6 @@ def log_config() -> Logger:
     pdfminer_log.addHandler(errors_file)
 
     return log
+
 
 log: Logger = log_config()

@@ -3,13 +3,13 @@ from telethon import TelegramClient
 from typing import Union
 from motor.core import Database, Collection
 from bson.objectid import ObjectId
-from aio_pika import Channel
 from pytonisacommons import log
 from pytonisacommons import QueueMessage
 
 telegram: Union[TelegramClient, None] = None
 rabbitmq: Union[dict, None] = None
 mongodb_db: Union[Database, None] = None
+
 
 async def on_document_processed(message: IncomingMessage):
     collection: Collection = mongodb_db.ocr_request
@@ -33,6 +33,7 @@ async def on_document_processed(message: IncomingMessage):
             reply_to=queue_message.message_id,
             file=file,
         )
+
 
 async def on_document_error(message: IncomingMessage):
     collection: Collection = mongodb_db.ocr_request
