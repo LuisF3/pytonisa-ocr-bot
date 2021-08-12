@@ -3,10 +3,10 @@ import asyncio
 
 from telethon.network.connection.connection import Connection
 
-from configs.Logs import log
+from pytonisacommons import log
 from MessageHandlers import start_command, help_lang_command, more_info_command, pdf_to_ocr
 import MessageHandlers
-from objects.Queues import Queues
+from pytonisacommons import Queues
 from QueueHandlers import on_document_processed
 import QueueHandlers
 

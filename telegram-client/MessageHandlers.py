@@ -1,4 +1,4 @@
-from objects.QueueMessage import QueueMessage
+from pytonisacommons import QueueMessage
 import os
 
 from telethon import events, custom
@@ -7,8 +7,8 @@ from motor.core import Database, Collection
 from pymongo.results import InsertOneResult
 from bson.objectid import ObjectId
 
-from configs.Logs import log
-from objects.Queues import Queues
+from pytonisacommons import log
+from pytonisacommons import Queues
 
 rabbitmq: dict = None
 mongodb_db: Database = None

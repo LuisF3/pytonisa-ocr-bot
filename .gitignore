@@ -6,3 +6,5 @@ deploy.sh
 logs/
 __pycache__/
 pdfs/
+**/build
+*.egg-info

@@ -1,5 +1,3 @@
-import asyncio
-
 from aio_pika import IncomingMessage
 
 telegram = None
