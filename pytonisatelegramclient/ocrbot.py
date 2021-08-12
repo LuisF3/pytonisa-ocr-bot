@@ -8,11 +8,11 @@ from telethon import TelegramClient
 from telethon.events import NewMessage
 from telethon.network.connection.connection import Connection
 
-import MessageHandlers
-import QueueHandlers
-from MessageHandlers import (help_lang_command, more_info_command, pdf_to_ocr,
+import messagehandlers
+import queuehandlers
+from messagehandlers import (help_lang_command, more_info_command, pdf_to_ocr,
                              start_command)
-from QueueHandlers import on_document_processed
+from queuehandlers import on_document_processed
 
 api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
@@ -90,11 +90,11 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
         )
     )
 
-    QueueHandlers.telegram = telethon
-    QueueHandlers.rabbitmq = rabbitmq
-    QueueHandlers.mongodb_db = mongodb.pytonisa
-    MessageHandlers.rabbitmq = rabbitmq
-    MessageHandlers.mongodb_db = mongodb.pytonisa
+    queuehandlers.telegram = telethon
+    queuehandlers.rabbitmq = rabbitmq
+    queuehandlers.mongodb_db = mongodb.pytonisa
+    messagehandlers.rabbitmq = rabbitmq
+    messagehandlers.mongodb_db = mongodb.pytonisa
 
     log.info('Bot initiated')
 
