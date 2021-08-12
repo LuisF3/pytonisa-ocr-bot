@@ -19,7 +19,7 @@ api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 
-async def start_telethon():
+async def start_telethon() -> TelegramClient:
     client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
 
     client.add_event_handler(start_command, NewMessage(incoming=True, pattern='/start'))
@@ -30,11 +30,11 @@ async def start_telethon():
     telethon = client
     return telethon
 
-async def exit_telethon(telethon):
+async def exit_telethon(telethon: TelegramClient):
     client: TelegramClient = telethon
     await client.disconnect()
 
-async def start_rabbitmq():
+async def start_rabbitmq() -> dict:
     connection = await connect_robust("amqp://guest:guest@localhost/", loop=loop)
     channel: Channel = await connection.channel()
 
@@ -48,21 +48,21 @@ async def start_rabbitmq():
 
     return rabbitmq
 
-async def exit_rabbitmq(rabbitmq):
+async def exit_rabbitmq(rabbitmq: dict):
     connection: Connection = rabbitmq['connection']
     await connection.close()
 
-async def start_mongodb():
+async def start_mongodb() -> AsyncIOMotorClient:
     client = AsyncIOMotorClient('mongodb://localhost:27017')
     
     mongodb = client
     return mongodb
 
-async def exit_mongodb(mongodb):
+async def exit_mongodb(mongodb: AsyncIOMotorClient):
     pass
 
 
-def main(loop: asyncio.AbstractEventLoop):
+def main(loop: asyncio.AbstractEventLoop) -> None:
     telethon, rabbitmq, mongodb = loop.run_until_complete(
         asyncio.gather(
             start_telethon(),

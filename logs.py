@@ -1,7 +1,7 @@
-from logging import Formatter, basicConfig, getLogger, FileHandler, INFO, WARN, ERROR
+from logging import Logger, Formatter, basicConfig, getLogger, FileHandler, INFO, WARN, ERROR
 import os
 
-def log_config():
+def log_config() -> Logger:
     formatter_str = '%(asctime)s [%(levelname)s] %(name)s (%(lineno)s): %(message)s'
     formatter = Formatter(formatter_str)
     basicConfig(format=formatter_str)
@@ -36,4 +36,4 @@ def log_config():
 
     return log
 
-log = log_config()
+log: Logger = log_config()

@@ -3,17 +3,17 @@ import os
 
 from telethon import events, custom
 from aio_pika import Channel, Message
-from motor.core import Collection
+from motor.core import Database, Collection
 from pymongo.results import InsertOneResult
 from bson.objectid import ObjectId
 
 from logs import log
 from queues import Queues
 
-rabbitmq = None
-mongodb_db = None
+rabbitmq: dict = None
+mongodb_db: Database = None
 
-async def start_command(event: events.newmessage.NewMessage.Event):
+async def start_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
 
     await message_obj.respond('Olá! Meu nome é Pytonisa e posso transformar pdfs em pdfs acessíveis/pesquisáveis (em OCR)')
@@ -21,20 +21,20 @@ async def start_command(event: events.newmessage.NewMessage.Event):
     await message_obj.respond('Para mais informações, veja as opções do bot (ou digite \'/\')')
     await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
 
-async def help_lang_command(event: events.newmessage.NewMessage.Event):
+async def help_lang_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
     
     await message_obj.respond('Para definir a(s) língua(s) do documento, utilize o comando `-l lang1+lang2+lang3` no texto da mensagem do documento')
     await message_obj.respond('No momento, estão disponíveis as línguas português (por), inglês (eng) e espanhol (spa), mas, pode me contatar se precisar de outro idioma (https://t.me/Luis_pi)')
     await message_obj.respond('Exemplo de comando: `-l por+eng` - Reconhece um documento com texto misto de inglês e português')
 
-async def more_info_command(event: events.newmessage.NewMessage.Event):
+async def more_info_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
     
     await message_obj.respond('O código fonte pode ser encontrado em https://github.com/LuisF3')
     await message_obj.respond('Se quiser, você pode doar uma quantia pelo pix. A chave aleatória é: 5edf6e87-8c5b-4cb9-b584-6ec1f12c8cbe')
 
-async def pdf_to_ocr(event: events.newmessage.NewMessage.Event):
+async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     """Handles messages for applying ocr to a pdf
     
     This function handles incoming new messages that respects the 
