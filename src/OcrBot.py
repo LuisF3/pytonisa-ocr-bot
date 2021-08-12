@@ -21,6 +21,9 @@ api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 
+rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
+mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
+
 async def start_telethon() -> TelegramClient:
     client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
 
@@ -37,7 +40,7 @@ async def exit_telethon(telethon: TelegramClient):
     await client.disconnect()
 
 async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
-    connection = await connect_robust("amqp://guest:guest@localhost/", loop=loop)
+    connection = await connect_robust(rabbitmq_connection_string, loop=loop)
     channel: Channel = await connection.channel()
 
     queues: dict[str, Queue] = {}
@@ -51,7 +54,7 @@ async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     }
 
     loop.create_task(
-        queues[Queues.TO_PROCESS.value].consume(on_document_processed, no_ack=True)
+        queues[Queues.PROCESSED.value].consume(on_document_processed, no_ack=True)
     )
 
     return rabbitmq
@@ -61,7 +64,7 @@ async def exit_rabbitmq(rabbitmq: dict):
     await connection.close()
 
 async def start_mongodb() -> AsyncIOMotorClient:
-    client = AsyncIOMotorClient('mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongodb_connection_string)
     
     mongodb = client
     return mongodb
