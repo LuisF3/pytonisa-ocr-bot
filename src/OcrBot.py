@@ -36,7 +36,7 @@ async def exit_telethon(telethon: TelegramClient):
     client: TelegramClient = telethon
     await client.disconnect()
 
-async def start_rabbitmq() -> dict:
+async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     connection = await connect_robust("amqp://guest:guest@localhost/", loop=loop)
     channel: Channel = await connection.channel()
 
@@ -50,7 +50,7 @@ async def start_rabbitmq() -> dict:
         'queues': queues
     }
 
-    asyncio.create_task(
+    loop.create_task(
         queues[Queues.TO_PROCESS.value].consume(on_document_processed, no_ack=True)
     )
 
@@ -74,7 +74,7 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
     telethon, rabbitmq, mongodb = loop.run_until_complete(
         asyncio.gather(
             start_telethon(),
-            start_rabbitmq(),
+            start_rabbitmq(loop),
             start_mongodb(),
         )
     )
