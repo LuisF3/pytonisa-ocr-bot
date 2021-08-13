@@ -2,9 +2,9 @@ from typing import Union
 
 import ocrmypdf
 from bson.objectid import ObjectId
-from pika.adapters.blocking_connection import BlockingChannel 
-from pika.spec import BasicProperties, Basic
-from pymongo.database import Database, Collection 
+from pika.adapters.blocking_connection import BlockingChannel
+from pika.spec import Basic, BasicProperties
+from pymongo.database import Collection, Database
 from pytonisacommons import QueueMessage, Queues, log
 
 rabbitmq: Union[dict, None] = None

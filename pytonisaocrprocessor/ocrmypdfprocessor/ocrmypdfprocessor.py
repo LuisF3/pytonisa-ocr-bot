@@ -1,6 +1,7 @@
 import os
 
-from pika.adapters.blocking_connection import BlockingConnection, BlockingChannel
+from pika.adapters.blocking_connection import (BlockingChannel,
+                                               BlockingConnection)
 from pika.connection import URLParameters
 from pymongo import MongoClient
 from pytonisacommons import Queues, log

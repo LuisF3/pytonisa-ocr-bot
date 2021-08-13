@@ -14,7 +14,8 @@ mongodb_db: Union[Database, None] = None
 
 async def on_document_processed(message: IncomingMessage):
     if mongodb_db is None:
-        log.warn('on_document_processed called before mongodb is ready, sleeping 10 seconds')
+        log.warn(
+            'on_document_processed called before mongodb is ready, sleeping 10 seconds')
         await asyncio.sleep(10)
         await message.nack()
         return
@@ -39,13 +40,14 @@ async def on_document_processed(message: IncomingMessage):
             reply_to=queue_message.message_id,
             file=file,
         )
-    
+
     await message.ack()
 
 
 async def on_document_error(message: IncomingMessage):
     if mongodb_db is None:
-        log.warn('on_document_error called before mongodb is ready, sleeping 10 seconds')
+        log.warn(
+            'on_document_error called before mongodb is ready, sleeping 10 seconds')
         await asyncio.sleep(10)
         await message.nack()
         return

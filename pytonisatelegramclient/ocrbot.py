@@ -11,7 +11,7 @@ import messagehandlers
 import queuehandlers
 from messagehandlers import (help_lang_command, more_info_command, pdf_to_ocr,
                              start_command)
-from queuehandlers import on_document_processed, on_document_error
+from queuehandlers import on_document_error, on_document_processed
 
 api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
@@ -58,9 +58,9 @@ async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
 
     asyncio.gather(
         queues[Queues.PROCESSED.value].consume(
-        on_document_processed),
+            on_document_processed),
         queues[Queues.ERROR.value].consume(
-        on_document_error),
+            on_document_error),
     )
 
     return rabbitmq
