@@ -1,8 +1,9 @@
 from typing import Union
 
 import ocrmypdf
-from aio_pika import Channel, IncomingMessage, Message
 from bson.objectid import ObjectId
+from pika.adapters.blocking_connection import BlockingChannel 
+from pika.spec import BasicProperties, Basic
 from pymongo.database import Database, Collection 
 from pytonisacommons import QueueMessage, Queues, log
 
@@ -10,19 +11,18 @@ rabbitmq: Union[dict, None] = None
 mongodb_db: Union[Database, None] = None
 
 
-async def on_document_to_process(message: IncomingMessage):
+def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body: Union[str, bytes]):
     collection: Collection = mongodb_db.ocr_request
-    channel: Channel = rabbitmq['channel']
 
-    ocr_request_id = ObjectId(message.body.decode())
+    ocr_request_id = ObjectId(body.decode())
 
+    log.info('-'*20 + str(ocr_request_id) + '-'*20)
     log.info('Processing document of id ' + str(ocr_request_id))
 
     document = collection.find_one(
         {'_id': ocr_request_id}
     )
     queue_message = QueueMessage(**document)
-
     if queue_message.started_processing:
         log.error(
             'Tentando processar um item repetido, provavelmente o servidor crashou no reconhecimento OCR anterior')
@@ -36,11 +36,13 @@ async def on_document_to_process(message: IncomingMessage):
             }
         )
 
-        await channel.default_exchange.publish(Message(message.body), routing_key=Queues.ERROR.value)
+        channel.basic_publish(
+            exchange='',
+            routing_key=Queues.ERROR.value,
+            body=body,
+        )
 
-        raise Exception(
-            'Tentando processar um item com started_processing=True. Provavelmente o sistema crashou em um processamento anterior')
-
+        return
     collection.update_one(
         {'_id': ocr_request_id},
         {'$set': {'started_processing': True}}
@@ -76,12 +78,16 @@ async def on_document_to_process(message: IncomingMessage):
             }
         )
 
-        await channel.default_exchange.publish(Message(message.body), routing_key=Queues.ERROR.value)
+        channel.basic_publish(
+            exchange='',
+            routing_key=Queues.ERROR.value,
+            body=body,
+        )
 
         raise mde
     except Exception as e:
         log.error('Ocorreu um erro desconhecido', e)
-        await collection.update_one(
+        collection.update_one(
             {'_id': ocr_request_id},
             {
                 '$set': {
@@ -91,7 +97,12 @@ async def on_document_to_process(message: IncomingMessage):
             }
         )
 
-        await channel.default_exchange.publish(Message(message.body), routing_key=Queues.ERROR.value)
+        channel.basic_publish(
+            exchange='',
+            routing_key=Queues.ERROR.value,
+            body=body,
+        )
+
         raise e
 
     collection.update_one(
@@ -101,6 +112,12 @@ async def on_document_to_process(message: IncomingMessage):
 
     log.info('Processamento OCR finalizado com sucesso!')
 
-    await channel.default_exchange.publish(Message(message.body), routing_key=Queues.PROCESSED.value)
+    channel.basic_publish(
+        exchange='',
+        routing_key=Queues.PROCESSED.value,
+        body=body,
+    )
 
     log.info('Documento processado inserido na fila')
+
+    channel.basic_ack(method.delivery_tag)

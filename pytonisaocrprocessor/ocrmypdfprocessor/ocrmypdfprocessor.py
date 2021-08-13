@@ -1,7 +1,7 @@
-import asyncio
 import os
 
-from aio_pika import Channel, Connection, Queue, connect_robust
+from pika.adapters.blocking_connection import BlockingConnection, BlockingChannel
+from pika.connection import URLParameters
 from pymongo import MongoClient
 from pytonisacommons import Queues, log
 
@@ -12,51 +12,44 @@ rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
 mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
 
 
-async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
-    connection = await connect_robust(rabbitmq_connection_string, loop=loop)
-    channel: Channel = await connection.channel()
+def start_rabbitmq() -> dict:
+    connection = BlockingConnection(URLParameters(rabbitmq_connection_string))
+    channel: BlockingChannel = connection.channel()
 
-    queues: dict[str, Queue] = {}
     for queue in Queues:
-        queues[queue.value] = await channel.declare_queue(queue.value, durable=True)
+        channel.queue_declare(queue.value, durable=True)
 
     rabbitmq = {
         'connection': connection,
         'channel': channel,
-        'queues': queues
     }
 
-    loop.create_task(
-        queues[Queues.TO_PROCESS.value].consume(
-            on_document_to_process, no_ack=True)
+    channel.basic_consume(
+        queue=Queues.TO_PROCESS.value,
+        on_message_callback=on_document_to_process
     )
 
     return rabbitmq
 
 
-async def exit_rabbitmq(rabbitmq: dict):
-    connection: Connection = rabbitmq['connection']
-    await connection.close()
+def exit_rabbitmq(rabbitmq: dict):
+    connection: BlockingConnection = rabbitmq['connection']
+    connection.close()
 
 
-async def start_mongodb() -> MongoClient:
+def start_mongodb() -> MongoClient:
     client = MongoClient(mongodb_connection_string)
 
     mongodb = client
     return mongodb
 
 
-async def exit_mongodb(mongodb: MongoClient):
+def exit_mongodb(mongodb: MongoClient):
     pass
 
 
-def main(loop: asyncio.AbstractEventLoop) -> None:
-    rabbitmq, mongodb = loop.run_until_complete(
-        asyncio.gather(
-            start_rabbitmq(loop),
-            start_mongodb(),
-        )
-    )
+def main() -> None:
+    rabbitmq, mongodb = start_rabbitmq(), start_mongodb(),
 
     queuehandler.rabbitmq = rabbitmq
     queuehandler.mongodb_db = mongodb.pytonisa
@@ -64,19 +57,14 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
     log.info('ocrmypdf processor initiated')
 
     try:
-        loop.run_forever()
+        channel: BlockingChannel = rabbitmq['channel']
+        channel.start_consuming()
     except KeyboardInterrupt:
-        loop.run_until_complete(
-            asyncio.gather(
-                exit_rabbitmq(rabbitmq),
-                exit_mongodb(mongodb),
-            )
-        )
+        exit_rabbitmq(rabbitmq), exit_mongodb(mongodb),
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
     try:
-        main(loop)
+        main()
     except:
         log.exception('Uncaugh exception...')

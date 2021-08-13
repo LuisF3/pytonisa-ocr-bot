@@ -11,7 +11,7 @@ import messagehandlers
 import queuehandlers
 from messagehandlers import (help_lang_command, more_info_command, pdf_to_ocr,
                              start_command)
-from queuehandlers import on_document_processed
+from queuehandlers import on_document_processed, on_document_error
 
 api_id = int(os.getenv('TELEGRAM_API_ID'))
 api_hash = os.getenv('TELEGRAM_API_HASH')
@@ -56,9 +56,11 @@ async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
         'queues': queues
     }
 
-    loop.create_task(
+    asyncio.gather(
         queues[Queues.PROCESSED.value].consume(
-            on_document_processed, no_ack=True)
+        on_document_processed),
+        queues[Queues.ERROR.value].consume(
+        on_document_error),
     )
 
     return rabbitmq
@@ -81,11 +83,11 @@ async def exit_mongodb(mongodb: AsyncIOMotorClient):
 
 
 def main(loop: asyncio.AbstractEventLoop) -> None:
-    telethon, rabbitmq, mongodb = loop.run_until_complete(
+    telethon, mongodb, rabbitmq = loop.run_until_complete(
         asyncio.gather(
             start_telethon(),
-            start_rabbitmq(loop),
             start_mongodb(),
+            start_rabbitmq(loop),
         )
     )
 
