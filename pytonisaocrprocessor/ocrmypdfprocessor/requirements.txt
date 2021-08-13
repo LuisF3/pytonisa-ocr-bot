@@ -1,5 +1,5 @@
-aio-pika==6.8.0
 aiormq==3.3.1
+autopep8==1.5.7
 cffi==1.14.6
 chardet==4.0.0
 coloredlogs==15.0.1
@@ -12,13 +12,16 @@ multidict==5.1.0
 ocrmypdf==12.3.2
 pamqp==2.3.0
 pdfminer.six==20201018
+pika==1.2.0
 pikepdf==2.16.1
 Pillow==8.3.1
 pluggy==0.13.1
+pycodestyle==2.7.0
 pycparser==2.20
 pymongo==3.12.0
 pytonisacommons==0.0.1
 reportlab==3.6.1
 sortedcontainers==2.4.0
+toml==0.10.2
 tqdm==4.62.0
 yarl==1.6.3
