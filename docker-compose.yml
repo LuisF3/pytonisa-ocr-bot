@@ -1,0 +1,58 @@
+version: "3.9"
+services:
+  mongodb:
+    image: mongo:5.0.2
+    container_name: mongodb
+    restart: unless-stopped
+    hostname: mongodb
+    volumes:
+      - ./mongodb/data:/data/db
+    environment:
+        MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+        MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+        - "27017:27017"
+  rabbitmq:
+    image: "rabbitmq:3.9-management"
+    container_name: rabbitmq
+    restart: unless-stopped
+    # environment:
+      # RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+      # RABBITMQ_DEFAULT_USER:  ${RABBITMQ_DEFAULT_USER}
+      # RABBITMQ_DEFAULT_PASS:  ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - "./rabbitmq/data/:/var/lib/rabbitmq/"
+  pytonisatelegramclient:
+    build:
+      context: ./
+      dockerfile: ./pytonisatelegramclient/Dockerfile
+    container_name: telegramclient
+    restart: unless-stopped
+    environment:
+        TELEGRAM_API_ID: ${TELEGRAM_API_ID}
+        TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+        TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+        RABBITMQ_CONN_STR: amqp://guest:guest@rabbitmq/
+        MONGODB_CONN_STR: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/?authSource=admin
+    volumes:
+      - "./pdfs:/pdfs"
+    depends_on: 
+      - rabbitmq
+      - mongodb
+  ocrmypdfprocessor:
+    build:
+      context: ./
+      dockerfile: ./pytonisaocrprocessor/ocrmypdfprocessor/Dockerfile
+    container_name: ocrmypdfprocessor
+    restart: unless-stopped
+    environment:
+        RABBITMQ_CONN_STR: amqp://guest:guest@rabbitmq/
+        MONGODB_CONN_STR: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/?authSource=admin
+    volumes:
+      - "./pdfs:/pdfs"
+    depends_on: 
+      - rabbitmq
+      - mongodb

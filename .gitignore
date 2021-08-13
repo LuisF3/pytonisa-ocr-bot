@@ -6,5 +6,7 @@ deploy.sh
 logs/
 __pycache__/
 pdfs/
+mongodb/
+rabbitmq/
 **/build
 *.egg-info

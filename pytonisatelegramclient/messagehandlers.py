@@ -53,7 +53,7 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     log.info('pdf_to_ocr called')
     await message_obj.reply('Arquivo recebido!')
 
-    files_folder = os.sep + os.path.join('home', 'luis', 'pdfs') + os.sep
+    files_folder = os.sep + 'pdfs' + os.sep
 
     default_args = {
         'input_file': None,

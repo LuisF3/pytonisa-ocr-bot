@@ -114,5 +114,4 @@ if __name__ == '__main__':
     try:
         main(loop)
     except:
-        print('entrou')
         log.exception('Uncaugh exception...')
