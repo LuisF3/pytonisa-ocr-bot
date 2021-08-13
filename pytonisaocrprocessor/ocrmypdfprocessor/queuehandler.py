@@ -3,7 +3,7 @@ from typing import Union
 import ocrmypdf
 from aio_pika import Channel, IncomingMessage, Message
 from bson.objectid import ObjectId
-from motor.core import Collection, Database
+from pymongo.database import Database, Collection 
 from pytonisacommons import QueueMessage, Queues, log
 
 rabbitmq: Union[dict, None] = None
@@ -18,7 +18,7 @@ async def on_document_to_process(message: IncomingMessage):
 
     log.info('Processing document of id ' + str(ocr_request_id))
 
-    document = await collection.find_one(
+    document = collection.find_one(
         {'_id': ocr_request_id}
     )
     queue_message = QueueMessage(**document)
@@ -26,7 +26,7 @@ async def on_document_to_process(message: IncomingMessage):
     if queue_message.started_processing:
         log.error(
             'Tentando processar um item repetido, provavelmente o servidor crashou no reconhecimento OCR anterior')
-        await collection.update_one(
+        collection.update_one(
             {'_id': ocr_request_id},
             {
                 '$set': {
@@ -41,7 +41,7 @@ async def on_document_to_process(message: IncomingMessage):
         raise Exception(
             'Tentando processar um item com started_processing=True. Provavelmente o sistema crashou em um processamento anterior')
 
-    await collection.update_one(
+    collection.update_one(
         {'_id': ocr_request_id},
         {'$set': {'started_processing': True}}
     )
@@ -58,7 +58,7 @@ async def on_document_to_process(message: IncomingMessage):
         queue_message.ocr_args['remove-background'] = False
         queue_message.ocr_args['redo_ocr'] = True
 
-        await collection.update_one(
+        collection.update_one(
             {'_id': ocr_request_id},
             {'$set': {'ocr_args': queue_message.ocr_args}}
         )
@@ -66,7 +66,7 @@ async def on_document_to_process(message: IncomingMessage):
         ocrmypdf.ocr(**queue_message.ocr_args)
     except ocrmypdf.MissingDependencyError as mde:
         log.error('Não foi possível processar alguma das línguas solicitadas', mde)
-        await collection.update_one(
+        collection.update_one(
             {'_id': ocr_request_id},
             {
                 '$set': {
@@ -94,7 +94,7 @@ async def on_document_to_process(message: IncomingMessage):
         await channel.default_exchange.publish(Message(message.body), routing_key=Queues.ERROR.value)
         raise e
 
-    await collection.update_one(
+    collection.update_one(
         {'_id': ocr_request_id},
         {'$set': {'processed': True}}
     )

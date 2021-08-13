@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from aio_pika import Channel, Connection, Queue, connect_robust
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
 from pytonisacommons import Queues, log
 
 import queuehandler
@@ -39,14 +39,14 @@ async def exit_rabbitmq(rabbitmq: dict):
     await connection.close()
 
 
-async def start_mongodb() -> AsyncIOMotorClient:
-    client = AsyncIOMotorClient(mongodb_connection_string)
+async def start_mongodb() -> MongoClient:
+    client = MongoClient(mongodb_connection_string)
 
     mongodb = client
     return mongodb
 
 
-async def exit_mongodb(mongodb: AsyncIOMotorClient):
+async def exit_mongodb(mongodb: MongoClient):
     pass
 
 
