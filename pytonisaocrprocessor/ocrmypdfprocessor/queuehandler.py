@@ -42,6 +42,8 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
             body=body,
         )
 
+        channel.basic_ack(method.delivery_tag)
+
         return
     collection.update_one(
         {'_id': ocr_request_id},
