@@ -17,7 +17,7 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
     ocr_request_id = ObjectId(body.decode())
 
     def handle_error(message: str, e: Exception=None):
-        log.error(message, e)
+        log.error(message, exc_info=e)
         collection.update_one(
             {'_id': ocr_request_id},
             {
@@ -50,8 +50,8 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
         handle_error(
             message='Tentando processar um item repetido, provavelmente o servidor crashou no reconhecimento OCR anterior'
         )
-
         return
+
     collection.update_one(
         {'_id': ocr_request_id},
         {'$set': {'started_processing': True}}
