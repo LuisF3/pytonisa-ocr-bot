@@ -11,6 +11,29 @@ rabbitmq: Union[dict, None] = None
 mongodb_db: Union[Database, None] = None
 
 
+def handle_error(message: str, ocr_request_id: ObjectId, collection: Collection, channel: BlockingChannel, delivery_tag, e: Exception=None):
+    log.error(message, e)
+    collection.update_one(
+        {'_id': ocr_request_id},
+        {
+            '$set': {
+                'error': True,
+            },
+            '$push': {
+                'errors': message,
+            }
+        }
+    )
+
+    channel.basic_publish(
+        exchange='',
+        routing_key=Queues.ERROR.value,
+        body=str(ocr_request_id).encode(),
+    )
+
+    channel.basic_ack(delivery_tag)
+
+
 def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body: Union[str, bytes]):
     collection: Collection = mongodb_db.ocr_request
 
@@ -23,26 +46,15 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
         {'_id': ocr_request_id}
     )
     queue_message = QueueMessage(**document)
+    
     if queue_message.started_processing:
-        log.error(
-            'Tentando processar um item repetido, provavelmente o servidor crashou no reconhecimento OCR anterior')
-        collection.update_one(
-            {'_id': ocr_request_id},
-            {
-                '$set': {
-                    'error': True,
-                    'errors': ['Tentando processar um item repetido, provavelmente o servidor crashou no reconhecimento OCR anterior']
-                }
-            }
+        handle_error(
+            message='Tentando processar um item repetido, provavelmente o servidor crashou no reconhecimento OCR anterior',
+            ocr_request_id=ocr_request_id,
+            collection=collection,
+            channel=channel,
+            delivery_tag=method.delivery_tag
         )
-
-        channel.basic_publish(
-            exchange='',
-            routing_key=Queues.ERROR.value,
-            body=body,
-        )
-
-        channel.basic_ack(method.delivery_tag)
 
         return
     collection.update_one(
@@ -69,43 +81,25 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
 
         ocrmypdf.ocr(**queue_message.ocr_args)
     except ocrmypdf.MissingDependencyError as mde:
-        log.error('Não foi possível processar alguma das línguas solicitadas', mde)
-        collection.update_one(
-            {'_id': ocr_request_id},
-            {
-                '$set': {
-                    'error': True,
-                    'errors': ['Não foi possível processar alguma das línguas solicitadas']
-                }
-            }
+        handle_error(
+            message='Não foi possível processar alguma das línguas solicitadas',
+            ocr_request_id=ocr_request_id,
+            collection=collection,
+            channel=channel,
+            delivery_tag=method.delivery_tag,
+            e=mde,
         )
-
-        channel.basic_publish(
-            exchange='',
-            routing_key=Queues.ERROR.value,
-            body=body,
-        )
-
-        raise mde
+        return
     except Exception as e:
-        log.error('Ocorreu um erro desconhecido', e)
-        collection.update_one(
-            {'_id': ocr_request_id},
-            {
-                '$set': {
-                    'error': True,
-                    'errors': ['Ocorreu um erro desconhecido']
-                }
-            }
+        handle_error(
+            message='Ocorreu um erro desconhecido',
+            ocr_request_id=ocr_request_id,
+            collection=collection,
+            channel=channel,
+            delivery_tag=method.delivery_tag,
+            e=e,
         )
-
-        channel.basic_publish(
-            exchange='',
-            routing_key=Queues.ERROR.value,
-            body=body,
-        )
-
-        raise e
+        return
 
     collection.update_one(
         {'_id': ocr_request_id},
