@@ -4,7 +4,7 @@ from logging import (ERROR, INFO, WARN, FileHandler, Formatter, Logger,
 
 
 def log_config() -> Logger:
-    formatter_str = '%(asctime)s [%(levelname)s] %(name)s (%(lineno)s): %(message)s'
+    formatter_str = '%(asctime)s [%(levelname)s] %(name)s.thread(%(thread)d) (%(lineno)s) : %(message)s'
     formatter = Formatter(formatter_str)
     basicConfig(format=formatter_str)
 
