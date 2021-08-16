@@ -1,7 +1,7 @@
 <p align="center">
     <img src="assets/imgs/blue - nobg.png" alt="Pytonisa" width="200">
     <br>
-    <a href="https://t.me/@mf_ocr_bot"><strong>@mf_ocr_bot</strong></a> 
+    <a href="https://t.me/mf_ocr_bot"><strong>@mf_ocr_bot</strong></a> 
     <br>
 </p>
 
@@ -55,7 +55,7 @@ To get TELEGRAM_API_ID, TELEGRAM_API_HASH, you must go to https://my.telegram.or
 
 To get TELEGRAM_BOT_TOKEN, you must talk to <a href="https://t.me/BotFather"><strong>@BotFather</strong></a>.
 
-MONGO_INITDB_ROOT_USERNAME and MONGO_INITDB_ROOT_PASSWORD are arbitraty.
+MONGO_INITDB_ROOT_USERNAME and MONGO_INITDB_ROOT_PASSWORD are arbitrary.
 
 Then:
 
