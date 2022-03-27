@@ -14,6 +14,8 @@ pytonisadb: PytonisaDB = None
 
 
 async def on_document_processed(message: IncomingMessage):
+    log.info('-'*20 + 'on_document_processed called' + '-'*20)
+
     if pytonisadb is None:
         log.warn(
             'on_document_processed called before mongodb is ready, sleeping 10 seconds')
@@ -39,6 +41,8 @@ async def on_document_processed(message: IncomingMessage):
             reply_to=queue_message.message_id,
             file=file,
         )
+
+    log.info('File sent')
 
     await message.ack()
 

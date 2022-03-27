@@ -87,9 +87,9 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
     except ocrmypdf.PriorOcrFoundError:
         log.info('Arquivo já possui OCR')
 
-        queue_message.ocr_args.set_redo_ocr()
+        queue_message.ocr_args.set_force_ocr()
         pytonisadb.ocr_requests.update_item(
-            ocr_request_id, {'ocr_args': queue_message.ocr_args})
+            ocr_request_id, {'ocr_args': queue_message.ocr_args.__dict__})
 
         ocrmypdf.ocr(**queue_message.ocr_args.__dict__)
     except ocrmypdf.MissingDependencyError as mde:
