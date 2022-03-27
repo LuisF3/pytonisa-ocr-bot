@@ -1,12 +1,13 @@
 import os
 from typing import Union
+import argparse
 
 from aio_pika import Channel, Message
 from bson.objectid import ObjectId
 from pytonisacommons import QueueMessage, Queues, log, OcrMyPdfArgs
 from telethon import custom, events
 
-from pytonisacommons import DatabaseEntry, PytonisaDB
+from pytonisacommons import PytonisaDB
 
 rabbitmq: Union[dict, None] = None
 pytonisadb: PytonisaDB = None
@@ -24,9 +25,9 @@ async def start_command(event: events.newmessage.NewMessage.Event) -> None:
 async def help_lang_command(event: events.newmessage.NewMessage.Event) -> None:
     message_obj: custom.message.Message = event.message
 
-    await message_obj.respond('Para definir a(s) língua(s) do documento, utilize o comando `-l lang1+lang2+lang3` no texto da mensagem do documento')
+    await message_obj.respond('Para definir a(s) língua(s) do documento, utilize o comando `-l lang1 lang2 lang3` no texto da mensagem do documento')
     await message_obj.respond('No momento, estão disponíveis as línguas português (por), inglês (eng) e espanhol (spa), mas, pode me contatar se precisar de outro idioma (https://t.me/Luis_pi)')
-    await message_obj.respond('Exemplo de comando: `-l por+eng` - Reconhece um documento com texto misto de inglês e português')
+    await message_obj.respond('Exemplo de comando: `-l por eng` - Reconhece um documento com texto misto de inglês e português')
 
 
 async def more_info_command(event: events.newmessage.NewMessage.Event) -> None:
@@ -50,7 +51,7 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
 
     message_obj: custom.message.Message = event.message
 
-    log.info('pdf_to_ocr called')
+    log.info('-'*20 + 'pdf_to_ocr called' + '-'*20)
     await message_obj.reply('Arquivo recebido!')
 
     # files_folder = os.getcwd() + os.sep + 'pdfs' + os.sep
@@ -58,10 +59,15 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
 
     default_args = OcrMyPdfArgs(None, files_folder + message_obj.file.name)
 
-    langs = get_flags(message_obj.message, '-l', '+')
-    if len(langs) > 0:
-        log.info('Language set to: ' + ' '.join(langs))
-        default_args['language'] = langs
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(description='Configuration of the ocr processing')
+    parser.add_argument('-l', nargs='*', default=['por'], help='Languages to be identified, space separated')
+
+    args_str = filter(None, message_obj.message.split(' '))
+    args = parser.parse_args(args_str)
+    
+    langs = args.l
+    log.info('Language set to: ' + ' '.join(langs))
+    default_args.language = langs
 
     default_args.input_file = await message_obj.download_media(file=files_folder + message_obj.file.name)
     channel: Channel = rabbitmq['channel']
@@ -71,8 +77,10 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     dicti: dict = queue_message.__dict__
     dicti['ocr_args'] = dicti['ocr_args'].__dict__
     result: dict = pytonisadb.ocr_requests.put_item(dicti)
-    
+
     objectId: ObjectId = result['_id']
+
+    log.info(f'document of id {objectId} created')
 
     encoded_id = bytes(str(objectId), 'utf-8')
     await channel.default_exchange.publish(Message(encoded_id), routing_key=Queues.TO_PROCESS.value)
@@ -80,18 +88,3 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     log.info('Arquivo inserido na fila para processamento')
     await message_obj.respond('Arquivo inserido na fila para processamento')
     log.info('Finalizado')
-
-
-def get_flags(string: str, flag: str, splitter: str) -> list:
-    if flag in string:
-        index = string.index(flag)
-        lang_args = string[index + 3:]
-
-        try:
-            index = lang_args.index('-')
-            lang_args = lang_args[: index - 1]
-        except:
-            pass
-
-        return lang_args.split(splitter)
-    return []
