@@ -6,14 +6,15 @@ from threading import Thread
 from pika.adapters.blocking_connection import (BlockingChannel,
                                                BlockingConnection)
 from pika.connection import URLParameters
-from pymongo import MongoClient
-from pytonisacommons import Queues, log
+from pytonisacommons import Queues, log, PytonisaDB
 
 import queuehandler
 from queuehandler import on_document_to_process_thread_handler
 
 rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
-mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
+
+if rabbitmq_connection_string is None:
+    raise Exception('RABBITMQ_CONN_STR must be not None')
 
 threads: List[Thread] = []
 
@@ -47,22 +48,18 @@ def exit_rabbitmq(rabbitmq: dict):
     connection.close()
 
 
-def start_mongodb() -> MongoClient:
-    client = MongoClient(mongodb_connection_string)
+def start_pytonisadb() -> PytonisaDB:
+    return PytonisaDB()
 
-    mongodb = client
-    return mongodb
-
-
-def exit_mongodb(mongodb: MongoClient):
-    pass
+def exit_pytonisadb(pytonisadb: PytonisaDB):
+    pytonisadb.close()
 
 
 def main() -> None:
-    rabbitmq, mongodb = start_rabbitmq(), start_mongodb()
+    rabbitmq, pytonisadb = start_rabbitmq(), start_pytonisadb()
 
     queuehandler.rabbitmq = rabbitmq
-    queuehandler.mongodb_db = mongodb.pytonisa
+    queuehandler.pytonisadb = pytonisadb
 
     log.info('ocrmypdf processor initiated')
 
@@ -70,7 +67,7 @@ def main() -> None:
         channel: BlockingChannel = rabbitmq['channel']
         channel.start_consuming()
     except KeyboardInterrupt:
-        exit_rabbitmq(rabbitmq), exit_mongodb(mongodb)
+        exit_rabbitmq(rabbitmq), exit_pytonisadb(pytonisadb)
 
         for thread in threads:
             thread.join()

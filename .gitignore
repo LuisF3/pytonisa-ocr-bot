@@ -10,3 +10,4 @@ mongodb/
 rabbitmq/
 **/build
 *.egg-info
+pytonisa.env

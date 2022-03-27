@@ -2,8 +2,7 @@ import asyncio
 import os
 
 from aio_pika import Channel, Connection, Queue, connect_robust
-from motor.motor_asyncio import AsyncIOMotorClient
-from pytonisacommons import Queues, log
+from pytonisacommons import Queues, log, PytonisaDB
 from telethon import TelegramClient
 from telethon.events import NewMessage
 
@@ -13,16 +12,17 @@ from messagehandlers import (help_lang_command, more_info_command, pdf_to_ocr,
                              start_command)
 from queuehandlers import on_document_error, on_document_processed
 
-api_id = int(os.getenv('TELEGRAM_API_ID'))
+api_id = os.getenv('TELEGRAM_API_ID')
 api_hash = os.getenv('TELEGRAM_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 
 rabbitmq_connection_string = os.getenv('RABBITMQ_CONN_STR')
-mongodb_connection_string = os.getenv('MONGODB_CONN_STR')
 
+if api_id is None or api_hash is None or bot_token is None or rabbitmq_connection_string is None:
+    raise Exception('TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_BOT_TOKEN and RABBITMQ_CONN_STR must be not None')
 
 async def start_telethon() -> TelegramClient:
-    client: TelegramClient = await TelegramClient('name', api_id, api_hash).start(bot_token=bot_token)
+    client: TelegramClient = await TelegramClient('pytonisa-telegram', int(api_id), api_hash).start(bot_token=bot_token)
 
     client.add_event_handler(start_command, NewMessage(
         incoming=True, pattern='/start'))
@@ -71,31 +71,28 @@ async def exit_rabbitmq(rabbitmq: dict):
     await connection.close()
 
 
-async def start_mongodb() -> AsyncIOMotorClient:
-    client = AsyncIOMotorClient(mongodb_connection_string)
-
-    mongodb = client
-    return mongodb
+async def start_pytonisadb():
+    return PytonisaDB()
 
 
-async def exit_mongodb(mongodb: AsyncIOMotorClient):
-    pass
+async def exit_pytonisadb(pytonisadb: PytonisaDB):
+    pytonisadb.close()
 
 
 def main(loop: asyncio.AbstractEventLoop) -> None:
-    telethon, mongodb, rabbitmq = loop.run_until_complete(
+    telethon, pytonisadb, rabbitmq = loop.run_until_complete(
         asyncio.gather(
             start_telethon(),
-            start_mongodb(),
+            start_pytonisadb(),
             start_rabbitmq(loop),
         )
     )
 
     queuehandlers.telegram = telethon
     queuehandlers.rabbitmq = rabbitmq
-    queuehandlers.mongodb_db = mongodb.pytonisa
+    queuehandlers.pytonisadb = pytonisadb
     messagehandlers.rabbitmq = rabbitmq
-    messagehandlers.mongodb_db = mongodb.pytonisa
+    messagehandlers.pytonisadb = pytonisadb
 
     log.info('Bot initiated')
 
@@ -106,7 +103,7 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
             asyncio.gather(
                 exit_telethon(telethon),
                 exit_rabbitmq(rabbitmq),
-                exit_mongodb(mongodb),
+                exit_pytonisadb(pytonisadb),
             )
         )
 

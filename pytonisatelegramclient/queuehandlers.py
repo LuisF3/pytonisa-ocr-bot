@@ -3,37 +3,36 @@ from typing import Union
 
 from aio_pika import IncomingMessage
 from bson.objectid import ObjectId
-from motor.core import Collection, Database
-from pytonisacommons import QueueMessage, log
+from pytonisacommons import QueueMessage, log, OcrMyPdfArgs
 from telethon import TelegramClient
+
+from pytonisacommons import PytonisaDB
 
 telegram: Union[TelegramClient, None] = None
 rabbitmq: Union[dict, None] = None
-mongodb_db: Union[Database, None] = None
+pytonisadb: PytonisaDB = None
 
 
 async def on_document_processed(message: IncomingMessage):
-    if mongodb_db is None:
+    if pytonisadb is None:
         log.warn(
             'on_document_processed called before mongodb is ready, sleeping 10 seconds')
         await asyncio.sleep(10)
         await message.nack()
         return
-    collection: Collection = mongodb_db.ocr_request
 
-    ocr_request_id = ObjectId(message.body.decode())
-    log.info('Sending processed document of id ' + str(ocr_request_id))
+    ocr_request_id = str(ObjectId(message.body.decode()))
+    log.info('Sending processed document of id ' + ocr_request_id)
 
-    document = await collection.find_one(
-        {'_id': ocr_request_id}
-    )
+    document: dict = pytonisadb.ocr_requests.get_item(ocr_request_id)
     queue_message = QueueMessage(**document)
+    queue_message.ocr_args = OcrMyPdfArgs(**queue_message.ocr_args)
 
     await telegram.send_message(
         entity=queue_message.chat_id,
         message='OCR feito! Estamos fazendo upload do seu arquivo',
     )
-    with open(queue_message.ocr_args['output_file'], 'rb') as file:
+    with open(queue_message.ocr_args.output_file, 'rb') as file:
         await telegram.send_message(
             entity=queue_message.chat_id,
             message='Aqui está!',
@@ -45,21 +44,19 @@ async def on_document_processed(message: IncomingMessage):
 
 
 async def on_document_error(message: IncomingMessage):
-    if mongodb_db is None:
+    if pytonisadb is None:
         log.warn(
             'on_document_error called before mongodb is ready, sleeping 10 seconds')
         await asyncio.sleep(10)
         await message.nack()
         return
-    collection: Collection = mongodb_db.ocr_request
 
-    ocr_request_id = ObjectId(message.body.decode())
-    log.info('Sending error for document of id ' + str(ocr_request_id))
+    ocr_request_id = str(ObjectId(message.body.decode()))
+    log.info('Sending error for document of id ' + ocr_request_id)
 
-    document = await collection.find_one(
-        {'_id': ocr_request_id}
-    )
+    document = pytonisadb.ocr_requests.get_item(ocr_request_id)
     queue_message = QueueMessage(**document)
+    queue_message.ocr_args = OcrMyPdfArgs(**queue_message.ocr_args)
 
     await telegram.send_message(
         entity=queue_message.chat_id,

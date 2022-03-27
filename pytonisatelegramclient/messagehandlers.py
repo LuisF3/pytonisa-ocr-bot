@@ -3,13 +3,13 @@ from typing import Union
 
 from aio_pika import Channel, Message
 from bson.objectid import ObjectId
-from motor.core import Collection, Database
-from pymongo.results import InsertOneResult
-from pytonisacommons import QueueMessage, Queues, log
+from pytonisacommons import QueueMessage, Queues, log, OcrMyPdfArgs
 from telethon import custom, events
 
+from pytonisacommons import DatabaseEntry, PytonisaDB
+
 rabbitmq: Union[dict, None] = None
-mongodb_db: Union[Database, None] = None
+pytonisadb: PytonisaDB = None
 
 
 async def start_command(event: events.newmessage.NewMessage.Event) -> None:
@@ -53,33 +53,26 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     log.info('pdf_to_ocr called')
     await message_obj.reply('Arquivo recebido!')
 
+    # files_folder = os.getcwd() + os.sep + 'pdfs' + os.sep
     files_folder = os.sep + 'pdfs' + os.sep
 
-    default_args = {
-        'input_file': None,
-        'output_file': files_folder + message_obj.file.name,
-        'language': ['por'],
-        'deskew': True,
-        'rotate_pages': True,
-        'clean': False,
-        'optimize': 1,
-        'progress_bar': False,
-    }
+    default_args = OcrMyPdfArgs(None, files_folder + message_obj.file.name)
 
     langs = get_flags(message_obj.message, '-l', '+')
     if len(langs) > 0:
         log.info('Language set to: ' + ' '.join(langs))
         default_args['language'] = langs
 
-    default_args['input_file'] = await message_obj.download_media(file=files_folder + message_obj.file.name)
-
-    collection: Collection = mongodb_db.ocr_request
+    default_args.input_file = await message_obj.download_media(file=files_folder + message_obj.file.name)
     channel: Channel = rabbitmq['channel']
 
-    queue_message = QueueMessage(
-        message_obj.chat_id, message_obj.id, default_args)
-    result: InsertOneResult = await collection.insert_one(queue_message.__dict__)
-    objectId: ObjectId = result.inserted_id
+    queue_message = QueueMessage(message_obj.chat_id, message_obj.id, default_args)
+    
+    dicti: dict = queue_message.__dict__
+    dicti['ocr_args'] = dicti['ocr_args'].__dict__
+    result: dict = pytonisadb.ocr_requests.put_item(dicti)
+    
+    objectId: ObjectId = result['_id']
 
     encoded_id = bytes(str(objectId), 'utf-8')
     await channel.default_exchange.publish(Message(encoded_id), routing_key=Queues.TO_PROCESS.value)
