@@ -14,5 +14,9 @@ setup(
         'pytonisacommons.configs',
         'pytonisacommons.objects',
         ],
+    install_requires=[
+        'nanoid==2.0.0',
+        'boto3==1.21.27'
+    ],
     # long_description=read('README'),
 )

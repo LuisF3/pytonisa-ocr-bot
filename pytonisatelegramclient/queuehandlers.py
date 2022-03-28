@@ -2,7 +2,6 @@ import asyncio
 from typing import Union
 
 from aio_pika import IncomingMessage
-from bson.objectid import ObjectId
 from pytonisacommons import QueueMessage, log, OcrMyPdfArgs
 from telethon import TelegramClient
 
@@ -23,7 +22,7 @@ async def on_document_processed(message: IncomingMessage):
         await message.nack()
         return
 
-    ocr_request_id = str(ObjectId(message.body.decode()))
+    ocr_request_id = message.body.decode()
     log.info('Sending processed document of id ' + ocr_request_id)
 
     document: dict = pytonisadb.ocr_requests.get_item(ocr_request_id)
@@ -55,7 +54,7 @@ async def on_document_error(message: IncomingMessage):
         await message.nack()
         return
 
-    ocr_request_id = str(ObjectId(message.body.decode()))
+    ocr_request_id = message.body.decode()
     log.info('Sending error for document of id ' + ocr_request_id)
 
     document = pytonisadb.ocr_requests.get_item(ocr_request_id)

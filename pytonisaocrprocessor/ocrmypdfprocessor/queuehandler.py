@@ -3,7 +3,6 @@ from functools import partial
 from threading import Thread
 
 import ocrmypdf
-from bson.objectid import ObjectId
 from pika.adapters.blocking_connection import BlockingConnection, BlockingChannel
 from pika.spec import Basic, BasicProperties
 from pytonisacommons import QueueMessage, Queues, log, PytonisaDB, DatabaseEntry, OcrMyPdfArgs
@@ -54,7 +53,7 @@ def handle_error(channel: BlockingChannel, ocr_request_id: str, delivery_tag, me
 def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body: Union[str, bytes]):
     connection: BlockingConnection = rabbitmq['connection']
     
-    ocr_request_id = str(ObjectId(body.decode()))
+    ocr_request_id = body.decode()
     
     handle_error_partial: function = partial(
         handle_error,

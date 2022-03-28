@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import List
 
 class OcrArgs:
     pass
@@ -8,7 +8,7 @@ class OcrMyPdfArgs(OcrArgs):
         self,
         input_file: str = None,
         output_file: str = None,
-        language: Union[List[str], None] = None,
+        language: List[str] = None,
         deskew: bool = True,
         rotate_pages: bool = True,
         clean: bool = False,

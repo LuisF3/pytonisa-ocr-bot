@@ -2,8 +2,7 @@ from __future__ import annotations
 from typing import Any
 import boto3
 from botocore.exceptions import ClientError
-from bson import ObjectId
-from bson.errors import InvalidId
+import nanoid
 import os
 
 aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
@@ -32,16 +31,13 @@ class Table:
 
     def put_item(self, item: dict) -> dict:
         if '_id' not in item or bool(item['_id']) == False:
-            item['_id'] = str(ObjectId())
+            item['_id'] = nanoid.generate()
 
         self.table.put_item(Item=item)
 
         return item
 
     def get_item(self, _id: str) -> dict:
-        if not ObjectId.is_valid(_id):
-            raise InvalidId('\'{_id}\' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string')
-
         try:
             response = self.table.get_item(Key={ '_id': _id })
         except ClientError as e:
@@ -50,7 +46,7 @@ class Table:
         
         return response['Item'] 
 
-    def update_item(self, _id: ObjectId, new_item: dict) -> dict:
+    def update_item(self, _id: str, new_item: dict) -> dict:
         old_item = self.get_item(_id)
         
         for key, val in new_item.items():

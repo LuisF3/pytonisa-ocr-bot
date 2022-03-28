@@ -3,7 +3,6 @@ from typing import Union
 import argparse
 
 from aio_pika import Channel, Message
-from bson.objectid import ObjectId
 from pytonisacommons import QueueMessage, Queues, log, OcrMyPdfArgs
 from telethon import custom, events
 
@@ -78,11 +77,11 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     dicti['ocr_args'] = dicti['ocr_args'].__dict__
     result: dict = pytonisadb.ocr_requests.put_item(dicti)
 
-    objectId: ObjectId = result['_id']
+    objectId: str = result['_id']
 
     log.info(f'document of id {objectId} created')
 
-    encoded_id = bytes(str(objectId), 'utf-8')
+    encoded_id = bytes(objectId, 'utf-8')
     await channel.default_exchange.publish(Message(encoded_id), routing_key=Queues.TO_PROCESS.value)
 
     log.info('Arquivo inserido na fila para processamento')
