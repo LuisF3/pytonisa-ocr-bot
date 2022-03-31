@@ -30,13 +30,13 @@ async def on_document_processed(message: IncomingMessage):
     queue_message = QueueMessage(**document)
     queue_message.ocr_args = OcrMyPdfArgs(**queue_message.ocr_args)
 
-    queue_message.ocr_args.output_file = pytonisa_files.download_file(queue_message.ocr_args.output_id)
+    output_file = pytonisa_files.download_file(queue_message.file_name)
 
     await telegram.send_message(
         entity=queue_message.chat_id,
         message='OCR feito! Estamos fazendo upload do seu arquivo',
     )
-    with open(queue_message.ocr_args.output_file, 'rb') as file:
+    with open(output_file, 'rb') as file:
         await telegram.send_message(
             entity=queue_message.chat_id,
             message='Aqui está!',

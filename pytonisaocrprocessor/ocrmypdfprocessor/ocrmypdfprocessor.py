@@ -6,7 +6,7 @@ from threading import Thread
 from pika.adapters.blocking_connection import (BlockingChannel,
                                                BlockingConnection)
 from pika.connection import URLParameters
-from pytonisacommons import Queues, log, PytonisaDB, PytonisaFileStorage, PytonisaLocalFileStorage
+from pytonisacommons import Queues, log, PytonisaDB, PytonisaFileStorage, PytonisaS3Storage
 
 import queuehandler
 from queuehandler import on_document_to_process_thread_handler
@@ -56,9 +56,9 @@ def exit_pytonisadb(pytonisadb: PytonisaDB):
 
 
 def start_pytonisa_file_storage() -> PytonisaFileStorage:
-    return PytonisaLocalFileStorage()
+    return PytonisaS3Storage()
 
-def exit_pytonisa_file_storage(pytonisa_files: PytonisaLocalFileStorage) -> PytonisaFileStorage:
+def exit_pytonisa_file_storage(pytonisa_files: PytonisaFileStorage) -> PytonisaFileStorage:
     pytonisa_files.close()
 
 
@@ -75,10 +75,13 @@ def main() -> None:
         channel: BlockingChannel = rabbitmq['channel']
         channel.start_consuming()
     except KeyboardInterrupt:
+        log.info('ending ocrmypdf')
         exit_rabbitmq(rabbitmq), exit_pytonisadb(pytonisadb), exit_pytonisa_file_storage(pytonisa_files)
 
         for thread in threads:
             thread.join()
+        log.info('ocrmypdf ended')
+
 
 
 if __name__ == '__main__':

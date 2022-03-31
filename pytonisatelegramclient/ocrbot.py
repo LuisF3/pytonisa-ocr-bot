@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from aio_pika import Channel, Connection, Queue, connect_robust
-from pytonisacommons import Queues, log, PytonisaDB, PytonisaFileStorage, PytonisaLocalFileStorage
+from pytonisacommons import Queues, log, PytonisaDB, PytonisaFileStorage, PytonisaS3Storage
 from telethon import TelegramClient
 from telethon.events import NewMessage
 
@@ -80,10 +80,10 @@ async def exit_pytonisadb(pytonisadb: PytonisaDB) -> None:
 
 
 async def start_pytonisa_file_storage() -> PytonisaFileStorage:
-    return PytonisaLocalFileStorage()
+    return PytonisaS3Storage()
 
 
-async def exit_pytonisa_file_storage(pytonisa_files: PytonisaLocalFileStorage) -> PytonisaFileStorage:
+async def exit_pytonisa_file_storage(pytonisa_files: PytonisaFileStorage) -> PytonisaFileStorage:
     pytonisa_files.close()
 
 
