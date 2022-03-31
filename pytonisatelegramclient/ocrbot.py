@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from aio_pika import Channel, Connection, Queue, connect_robust
-from pytonisacommons import Queues, log, PytonisaDB
+from pytonisacommons import Queues, log, PytonisaDB, PytonisaFileStorage, PytonisaLocalFileStorage
 from telethon import TelegramClient
 from telethon.events import NewMessage
 
@@ -37,7 +37,7 @@ async def start_telethon() -> TelegramClient:
     return telethon
 
 
-async def exit_telethon(telethon: TelegramClient):
+async def exit_telethon(telethon: TelegramClient) -> None:
     client: TelegramClient = telethon
     await client.disconnect()
 
@@ -66,33 +66,44 @@ async def start_rabbitmq(loop: asyncio.AbstractEventLoop) -> dict:
     return rabbitmq
 
 
-async def exit_rabbitmq(rabbitmq: dict):
+async def exit_rabbitmq(rabbitmq: dict) -> None:
     connection: Connection = rabbitmq['connection']
     await connection.close()
 
 
-async def start_pytonisadb():
+async def start_pytonisadb() -> PytonisaDB:
     return PytonisaDB()
 
 
-async def exit_pytonisadb(pytonisadb: PytonisaDB):
+async def exit_pytonisadb(pytonisadb: PytonisaDB) -> None:
     pytonisadb.close()
 
 
+async def start_pytonisa_file_storage() -> PytonisaFileStorage:
+    return PytonisaLocalFileStorage()
+
+
+async def exit_pytonisa_file_storage(pytonisa_files: PytonisaLocalFileStorage) -> PytonisaFileStorage:
+    pytonisa_files.close()
+
+
 def main(loop: asyncio.AbstractEventLoop) -> None:
-    telethon, pytonisadb, rabbitmq = loop.run_until_complete(
+    telethon, pytonisadb, rabbitmq, pytonisa_files = loop.run_until_complete(
         asyncio.gather(
             start_telethon(),
             start_pytonisadb(),
             start_rabbitmq(loop),
+            start_pytonisa_file_storage(),
         )
     )
 
     queuehandlers.telegram = telethon
     queuehandlers.rabbitmq = rabbitmq
     queuehandlers.pytonisadb = pytonisadb
+    queuehandlers.pytonisa_files = pytonisa_files
     messagehandlers.rabbitmq = rabbitmq
     messagehandlers.pytonisadb = pytonisadb
+    messagehandlers.pytonisa_files = pytonisa_files
 
     log.info('Bot initiated')
 
@@ -104,6 +115,7 @@ def main(loop: asyncio.AbstractEventLoop) -> None:
                 exit_telethon(telethon),
                 exit_rabbitmq(rabbitmq),
                 exit_pytonisadb(pytonisadb),
+                exit_pytonisa_file_storage(pytonisa_files),
             )
         )
 

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name = "pytonisacommons",
-    version = "2.0.0",
+    version = "2.0.1",
     author = "Luís Chaves",
     author_email = "luis.chaves_@outlook.com",
     description = ("This package contains common code for other modules of the pythonisa-ocr-bot"),

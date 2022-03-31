@@ -6,7 +6,7 @@ from threading import Thread
 from pika.adapters.blocking_connection import (BlockingChannel,
                                                BlockingConnection)
 from pika.connection import URLParameters
-from pytonisacommons import Queues, log, PytonisaDB
+from pytonisacommons import Queues, log, PytonisaDB, PytonisaFileStorage, PytonisaLocalFileStorage
 
 import queuehandler
 from queuehandler import on_document_to_process_thread_handler
@@ -55,11 +55,19 @@ def exit_pytonisadb(pytonisadb: PytonisaDB):
     pytonisadb.close()
 
 
+def start_pytonisa_file_storage() -> PytonisaFileStorage:
+    return PytonisaLocalFileStorage()
+
+def exit_pytonisa_file_storage(pytonisa_files: PytonisaLocalFileStorage) -> PytonisaFileStorage:
+    pytonisa_files.close()
+
+
 def main() -> None:
-    rabbitmq, pytonisadb = start_rabbitmq(), start_pytonisadb()
+    rabbitmq, pytonisadb, pytonisa_files = start_rabbitmq(), start_pytonisadb(), start_pytonisa_file_storage()
 
     queuehandler.rabbitmq = rabbitmq
     queuehandler.pytonisadb = pytonisadb
+    queuehandler.pytonisa_files = pytonisa_files
 
     log.info('ocrmypdf processor initiated')
 
@@ -67,7 +75,7 @@ def main() -> None:
         channel: BlockingChannel = rabbitmq['channel']
         channel.start_consuming()
     except KeyboardInterrupt:
-        exit_rabbitmq(rabbitmq), exit_pytonisadb(pytonisadb)
+        exit_rabbitmq(rabbitmq), exit_pytonisadb(pytonisadb), exit_pytonisa_file_storage(pytonisa_files)
 
         for thread in threads:
             thread.join()

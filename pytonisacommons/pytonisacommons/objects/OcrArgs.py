@@ -6,6 +6,8 @@ class OcrArgs:
 class OcrMyPdfArgs(OcrArgs):
     def __init__(
         self,
+        input_id: str = None,
+        output_id: str = None,
         input_file: str = None,
         output_file: str = None,
         language: List[str] = None,
@@ -18,6 +20,8 @@ class OcrMyPdfArgs(OcrArgs):
         progress_bar: bool = False,
         **kwargs
     ) -> None:
+        self.input_id: str = input_id
+        self.output_id: str = output_id
         self.input_file: str = input_file
         self.output_file: str = output_file
         self.language: List[str] = language

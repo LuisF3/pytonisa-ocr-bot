@@ -3,13 +3,14 @@ from typing import Union
 import argparse
 
 from aio_pika import Channel, Message
-from pytonisacommons import QueueMessage, Queues, log, OcrMyPdfArgs
+from pytonisacommons import QueueMessage, Queues, log, OcrMyPdfArgs, PytonisaFileStorage
 from telethon import custom, events
 
 from pytonisacommons import PytonisaDB
 
 rabbitmq: Union[dict, None] = None
 pytonisadb: PytonisaDB = None
+pytonisa_files: PytonisaFileStorage = None
 
 
 async def start_command(event: events.newmessage.NewMessage.Event) -> None:
@@ -54,9 +55,11 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     await message_obj.reply('Arquivo recebido!')
 
     # files_folder = os.getcwd() + os.sep + 'pdfs' + os.sep
-    files_folder = os.sep + 'pdfs' + os.sep
+    files_folder = pytonisa_files.get_valid_path()
+    file_path: str = await message_obj.download_media(file=os.path.join(files_folder, message_obj.file.name))
+    file_id = pytonisa_files.upload_file(file_path)
 
-    default_args = OcrMyPdfArgs(None, files_folder + message_obj.file.name)
+    default_args = OcrMyPdfArgs(file_id)
 
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description='Configuration of the ocr processing')
     parser.add_argument('-l', nargs='*', default=['por'], help='Languages to be identified, space separated')
@@ -68,10 +71,8 @@ async def pdf_to_ocr(event: events.newmessage.NewMessage.Event) -> None:
     log.info('Language set to: ' + ' '.join(langs))
     default_args.language = langs
 
-    default_args.input_file = await message_obj.download_media(file=files_folder + message_obj.file.name)
     channel: Channel = rabbitmq['channel']
-
-    queue_message = QueueMessage(message_obj.chat_id, message_obj.id, default_args)
+    queue_message = QueueMessage(message_obj.chat_id, message_obj.id, default_args, os.path.basename(file_path))
     
     dicti: dict = queue_message.__dict__
     dicti['ocr_args'] = dicti['ocr_args'].__dict__

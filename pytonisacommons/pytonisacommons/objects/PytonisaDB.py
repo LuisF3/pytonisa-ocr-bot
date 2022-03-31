@@ -53,5 +53,5 @@ class Table:
             old_item[key] = val
         
         new_item = old_item
-        return self.put_item(new_item)
+        return self.put_item(new_item)['_id']
 

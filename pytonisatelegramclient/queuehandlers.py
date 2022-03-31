@@ -2,7 +2,7 @@ import asyncio
 from typing import Union
 
 from aio_pika import IncomingMessage
-from pytonisacommons import QueueMessage, log, OcrMyPdfArgs
+from pytonisacommons import QueueMessage, log, OcrMyPdfArgs, PytonisaFileStorage
 from telethon import TelegramClient
 
 from pytonisacommons import PytonisaDB
@@ -10,6 +10,7 @@ from pytonisacommons import PytonisaDB
 telegram: Union[TelegramClient, None] = None
 rabbitmq: Union[dict, None] = None
 pytonisadb: PytonisaDB = None
+pytonisa_files: PytonisaFileStorage = None
 
 
 async def on_document_processed(message: IncomingMessage):
@@ -17,7 +18,7 @@ async def on_document_processed(message: IncomingMessage):
 
     if pytonisadb is None:
         log.warn(
-            'on_document_processed called before mongodb is ready, sleeping 10 seconds')
+            'on_document_processed called before database is ready, sleeping 10 seconds')
         await asyncio.sleep(10)
         await message.nack()
         return
@@ -28,6 +29,8 @@ async def on_document_processed(message: IncomingMessage):
     document: dict = pytonisadb.ocr_requests.get_item(ocr_request_id)
     queue_message = QueueMessage(**document)
     queue_message.ocr_args = OcrMyPdfArgs(**queue_message.ocr_args)
+
+    queue_message.ocr_args.output_file = pytonisa_files.download_file(queue_message.ocr_args.output_id)
 
     await telegram.send_message(
         entity=queue_message.chat_id,
@@ -49,7 +52,7 @@ async def on_document_processed(message: IncomingMessage):
 async def on_document_error(message: IncomingMessage):
     if pytonisadb is None:
         log.warn(
-            'on_document_error called before mongodb is ready, sleeping 10 seconds')
+            'on_document_error called before database is ready, sleeping 10 seconds')
         await asyncio.sleep(10)
         await message.nack()
         return

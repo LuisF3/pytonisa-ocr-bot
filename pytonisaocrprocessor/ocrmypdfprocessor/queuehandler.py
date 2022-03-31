@@ -1,15 +1,16 @@
 from typing import Union, List
 from functools import partial
 from threading import Thread
+import os
 
 import ocrmypdf
 from pika.adapters.blocking_connection import BlockingConnection, BlockingChannel
 from pika.spec import Basic, BasicProperties
-from pytonisacommons import QueueMessage, Queues, log, PytonisaDB, DatabaseEntry, OcrMyPdfArgs
+from pytonisacommons import QueueMessage, Queues, log, PytonisaDB, DatabaseEntry, OcrMyPdfArgs, PytonisaFileStorage, PytonisaLocalFileStorage
 
 rabbitmq: Union[dict, None] = None
 pytonisadb: PytonisaDB = None
-
+pytonisa_files: PytonisaFileStorage = None
 
 def ack_message(delivery_tag, routing_key, message, nack=False):
     """Note that `channel` must be the same pika channel instance via which
@@ -40,13 +41,13 @@ def handle_error(channel: BlockingChannel, ocr_request_id: str, delivery_tag, me
     document: dict = pytonisadb.ocr_requests.get_item(ocr_request_id)
     existing_errors: list = document['errors']
 
-    pytonisadb.ocr_requests.update_item(ocr_request_id, {
+    ocr_request_id = pytonisadb.ocr_requests.update_item(ocr_request_id, {
         'error': True,
         'errors': existing_errors + [message],
     })
 
     cb = partial(ack_message, delivery_tag=delivery_tag,
-                 routing_key=Queues.ERROR.value, message=str(ocr_request_id).encode())
+                 routing_key=Queues.ERROR.value, message=ocr_request_id.encode())
     connection.add_callback_threadsafe(cb)
 
 
@@ -61,7 +62,6 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
         ocr_request_id=ocr_request_id,
         delivery_tag=method.delivery_tag
     )
-
 
     log.info('-'*20 + ocr_request_id + '-'*20)
     log.info('Processing document of id ' + ocr_request_id)
@@ -79,10 +79,15 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
     queue_message.started_processing = True 
     pytonisadb.ocr_requests.update_item(ocr_request_id, {'started_processing': True})
 
+    queue_message.ocr_args.input_file = pytonisa_files.download_file(queue_message.ocr_args.input_id)
+    queue_message.ocr_args.output_file = os.path.join(pytonisa_files.get_valid_path(), queue_message.file_name)
+
     log.info('Iniciando processamento OCR')
 
     try:
-        ocrmypdf.ocr(**queue_message.ocr_args.__dict__)
+        ocr_args = queue_message.ocr_args.__dict__
+        del ocr_args['input_id']
+        ocrmypdf.ocr(**ocr_args)
     except ocrmypdf.PriorOcrFoundError:
         log.info('Arquivo já possui OCR')
 
@@ -90,7 +95,9 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
         pytonisadb.ocr_requests.update_item(
             ocr_request_id, {'ocr_args': queue_message.ocr_args.__dict__})
 
-        ocrmypdf.ocr(**queue_message.ocr_args.__dict__)
+        ocr_args = queue_message.ocr_args.__dict__
+        del ocr_args['input_id']
+        ocrmypdf.ocr(**ocr_args)
     except ocrmypdf.MissingDependencyError as mde:
         handle_error_partial(
             message='Não foi possível processar alguma das línguas solicitadas',
@@ -104,8 +111,12 @@ def on_document_to_process(channel: BlockingChannel, method: Basic.Deliver, prop
         )
         return
 
+    queue_message.ocr_args.output_id = pytonisa_files.upload_file(queue_message.ocr_args.output_file)
+
     queue_message.processed = True
-    pytonisadb.ocr_requests.update_item(ocr_request_id, {'processed': True})
+    ocr_args = queue_message.ocr_args.__dict__
+    del ocr_args['input_file'], ocr_args['output_file']
+    pytonisadb.ocr_requests.update_item(ocr_request_id, {'processed': True, 'ocr_args': ocr_args})
 
     log.info('Processamento OCR finalizado com sucesso!')
 

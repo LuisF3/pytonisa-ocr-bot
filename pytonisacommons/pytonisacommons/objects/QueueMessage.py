@@ -9,6 +9,7 @@ class QueueMessage(DatabaseEntry):
         chat_id: int,
         message_id: int,
         ocr_args: OcrArgs | dict,
+        file_name: str,
         _id: str=None,
         started_processing: bool=False,
         processed: bool=False,
@@ -19,6 +20,7 @@ class QueueMessage(DatabaseEntry):
         self.chat_id: int = int(chat_id)
         self.message_id: int = int(message_id)
         self.ocr_args: OcrArgs = ocr_args
+        self.file_name: str = file_name
         self.started_processing: bool = started_processing
         self.processed: bool = processed
         self.error: bool = error
